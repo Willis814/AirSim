@@ -19,6 +19,7 @@ AProbotPawn::AProbotPawn()
     , SlowMoFactor(1)
     , isMaterialMappingFound(false)
     , bSweep(false)
+    , bCheckInInitPos(true)
 {
     static ConstructorHelpers::FObjectFinder<UDataTable> material_mapping_finder(TEXT("DataTable'/Game/MaterialMappingTable.MaterialMappingTable'"), LOAD_Quiet | LOAD_NoWarn);
     if (material_mapping_finder.Succeeded()) {
@@ -113,6 +114,18 @@ void AProbotPawn::DoPhysics(float DeltaTime)
     MotionModel->Update(DeltaTime * SlowMoFactor);
 }
 
+void AProbotPawn::PreFirstUpdate()
+{
+    bSweep = false;
+    bCheckInInitPos = true;
+}
+
+void AProbotPawn::PostFirstUpdate()
+{
+    bSweep = true;
+    bCheckInInitPos = false;
+}
+
 void AProbotPawn::Bind(ITnPhysicalItem* pItem)
 {
     ITnPhysicalItem::EPhysicalItemType eType;
@@ -182,7 +195,7 @@ void AProbotPawn::OnUpdate(ITnPhysicalItem** pITnPhysicalItemsArray, int numItem
         }
     }
 
-    bSweep = true;
+    PostFirstUpdate();
 }
 
 bool AProbotPawn::OnCollision(ITnCollisionPointPhysicalItem** pITnCollisionPointsArray, int numItems)
@@ -197,7 +210,7 @@ void AProbotPawn::GetTerrainHeight(double x, double y, bool* isFound, double* pd
     y *= 100.0;
     *isFound = true;
 
-    *pdHeight = DTMSensor->GetTerrainHeight(x, y) / 100.0;
+    *pdHeight = DTMSensor->GetTerrainHeight(x, y, bCheckInInitPos) / 100.0;
 }
 
 void AProbotPawn::GetTerrainMaterial(const STnVector3D& WorldPos, bool* bpMaterialFound, ITnMotionMaterial::STerrainMaterialType& TerrainMaterialType)
@@ -250,6 +263,7 @@ void AProbotPawn::updateHUDStrings()
 
 void AProbotPawn::InitModel()
 {
+    PreFirstUpdate();
     ITnErrors::EMotionCode ret = MotionModel->Init(InitPos, InitYaw);
     if (ret == ITnErrors::EMotionCode::SUCCESS) {
         UAirBlueprintLib::LogMessageString("Motion Model initialized successfully", "", LogDebugLevel::Informational);
@@ -257,7 +271,6 @@ void AProbotPawn::InitModel()
     else {
         UAirBlueprintLib::LogMessageString("Motion Model couldn't be initialized", "", LogDebugLevel::Failure);
     }
-    bSweep = false;
 }
 
 #undef LOCTEXT_NAMESPACE

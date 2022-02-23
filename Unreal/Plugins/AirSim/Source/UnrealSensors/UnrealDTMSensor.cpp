@@ -30,6 +30,7 @@ void UUnrealDTMSensor::BeginPlay()
 {
     InitRenderTarget();
     Super::BeginPlay();
+    InitPos = GetComponentLocation();
 }
 
 void UUnrealDTMSensor::EndPlay(const EEndPlayReason::Type EndPlayReason)
@@ -114,7 +115,7 @@ void UUnrealDTMSensor::TickComponent(float DeltaTime, ELevelTick TickType, FActo
         });
 }
 
-double UUnrealDTMSensor::GetTerrainHeight(double x, double y)
+double UUnrealDTMSensor::GetTerrainHeight(double x, double y, bool bCheckInInitPos)
 {
     bool IsNoHeightMap = false;
 
@@ -150,7 +151,7 @@ double UUnrealDTMSensor::GetTerrainHeight(double x, double y)
         FVector startPos;
         startPos.X = x;
         startPos.Y = y;
-        startPos.Z = GetComponentLocation().Z;
+        startPos.Z = bCheckInInitPos ? InitPos.Z : GetComponentLocation().Z;
 
         FVector endPos = startPos;
         endPos.Z = -HALF_WORLD_MAX;

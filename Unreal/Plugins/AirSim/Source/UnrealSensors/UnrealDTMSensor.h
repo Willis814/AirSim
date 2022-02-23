@@ -14,7 +14,7 @@ class UUnrealDTMSensor : public USceneCaptureComponent2D
     GENERATED_BODY()
 
 public:
-    double GetTerrainHeight(double x, double y);
+    double GetTerrainHeight(double x, double y, bool bCheckInInitPos);
 
     UPROPERTY(EditAnywhere)
     bool IsForceCPU;
@@ -23,15 +23,15 @@ public:
     virtual void BeginPlay() override;
     virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
     virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
-    void InitRenderTarget();
-    void ReadDepth();
-    UMaterial* DTMSensorMaterial;
-
-    UPROPERTY(EditAnywhere)
-    AActor* OtherActor;
-
-    uint8* m_pHeightMap;
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite)
     UTextureRenderTarget2D* RenderTarget = nullptr;
+
+private:
+    void InitRenderTarget();
+    void ReadDepth();
+
+    UMaterial* DTMSensorMaterial;
+    uint8* m_pHeightMap;
+    FVector InitPos;
 };

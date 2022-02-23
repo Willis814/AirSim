@@ -97,6 +97,9 @@ public:
 private:
     inline void DoPhysics(float DeltaTime);
 
+    void PreFirstUpdate();
+    void PostFirstUpdate();
+
 private:
     float VehicleSpeed;
     float SlowMoFactor;
@@ -105,6 +108,7 @@ private:
     FVector WorldToGlobalOffset;
     bool isMaterialMappingFound;
     bool bSweep;
+    bool bCheckInInitPos;
 
     UPROPERTY()
     UDataTable* material_mapping_table;
