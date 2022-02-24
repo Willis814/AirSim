@@ -42,6 +42,7 @@ public class AirSim : ModuleRules
 
     private void SetupCompileMode(CompileMode mode, ReadOnlyTargetRules Target)
     {
+        PublicAdditionalLibraries.Add(Path.Combine(AirLibPath, "deps", "MotionCore", "lib","ExcelFormat" + ".a"));
         LoadAirSimDependency(Target, "MavLinkCom", "MavLinkCom");
         LoadAirSimDependency(Target, "ControlCore", "ControlCore", "ControlCore");
         LoadAirSimDependency(Target, "MotionCore", "MotionCore", "MotionCore");
@@ -161,7 +162,15 @@ public class AirSim : ModuleRules
         else if (Target.Platform == UnrealTargetPlatform.Linux || Target.Platform == UnrealTargetPlatform.Mac)
         {
             isLibrarySupported = true;
-            PublicAdditionalLibraries.Add(Path.Combine(LibPath, "lib" + LibFileName + ".a"));
+            if (LibFileName != "ControlCore" && LibFileName != "MotionCore")
+            { 
+                PublicAdditionalLibraries.Add(Path.Combine(LibPath, "lib" + LibFileName + ".a"));
+            }
+            if (DllFileName != null)
+            {
+                //PublicAdditionalLibraries.Add(DllFileName + ".so");
+                PublicAdditionalLibraries.Add(Path.Combine(LibPath, DllFileName + ".so"));
+            }
         }
 
         if (isLibrarySupported && IsAddLibInclude)
