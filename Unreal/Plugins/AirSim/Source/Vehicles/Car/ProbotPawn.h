@@ -40,6 +40,7 @@ enum class EModelType : uint8
 UCLASS(config = Game)
 class AProbotPawn : public ACarPawn
     , public ITnWheeledVehicleMotionModelListener
+    , public ITnMotionModelSafetyProblemReport
     , public ITnMotionQueries
     , public ITnPhysicalItemBinder
 {
@@ -68,6 +69,9 @@ public:
     virtual void StartTimer() override {}
     virtual void OnDataUpdate(double timeSeconds) override {}
     virtual double GetTimeSeconds() override { return 0; }
+
+    // ITnMotionModelSafetyProblemReport override
+    virtual void SafetyEvent(ITnErrors::EMotionCode SafetyProblem) override;
 
     // ACarPawn override
     virtual void updateHUDStrings() override;
@@ -114,6 +118,20 @@ private:
     UDataTable* material_mapping_table;
 
     TMap<FString, TTuple<ETerrainType, ETerrainSubType>> MaterialMapping;
+};
+
+static const char* safetyEnumStr[] = {
+    "MAX_SIDE_SLOP_DETECTED",
+    "MAX_RISE_SLOP_DETECTED",
+    "MAX_DOWN_SLOP_DETECTED",
+    "MAX_SLIP_PERCENT_DETECTED",
+    "MAX_DELTA_WHEEL_DETECTED",
+    "MAX_NEGATIVE_VELOCITY_DETECTED",
+    "MAX_DEVIATION_FROM_PATH_DETECTED",
+    "COLLISION_DETECTED",
+    "EXTERNAL_COLLISION_DETECTED",
+    "TERRAIN_HEIGHT_PROBLEM_DETECTED",
+    "UNTRAVERSABLE_MATERIAL_DETECTED"
 };
 
 #pragma warning(pop)

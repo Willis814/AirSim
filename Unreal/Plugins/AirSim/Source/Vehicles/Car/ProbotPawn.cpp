@@ -44,6 +44,7 @@ void AProbotPawn::BeginPlay()
     if (MotionModel == nullptr) {
         MotionModel = ITnMotionCore::CreateVehicleMotionModel3D(this, this);
         MotionModel->SetListender(this);
+        MotionModel->SetSafetyProblemReport(this);
 
         FString baseDir = FPaths::Combine(IPluginManager::Get().FindPlugin("AirSim")->GetBaseDir(), TEXT("/Source/AirLib/deps/MotionCore/"));
         FString configFilename;
@@ -242,10 +243,18 @@ void AProbotPawn::GetTerrainMoisture(const STnVector3D& WorldPos, bool* bpMoistu
 {
 }
 
+void AProbotPawn::SafetyEvent(ITnErrors::EMotionCode SafetyProblem)
+{
+    // subtract 201 because this is the value of the first Safety enum.
+    // It may break easily but we don't have another way to print the enum
+    // Refer to ITnErros.h, EMotionCode
+    UAirBlueprintLib::LogMessageString("Motion Model Safety problem detected: ", safetyEnumStr[SafetyProblem - 201], LogDebugLevel::Failure, 5.0f);
+}
+
 void AProbotPawn::updateHUDStrings()
 {
     float speed_unit_factor = msr::airlib::AirSimSettings::singleton().speed_unit_factor;
-    FText speed_unit_label = FText::FromString(FString(msr::airlib::AirSimSettings::AirSimSettings::singleton().speed_unit_label.c_str()));
+    FText speed_unit_label = FText::FromString(FString(msr::airlib::AirSimSettings::singleton().speed_unit_label.c_str()));
     float vel = FMath::Abs(MotionModel->GetSpeed());
     float vel_rounded = FMath::FloorToInt(vel * 10 * speed_unit_factor) / 10.0f;
 
