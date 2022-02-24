@@ -248,7 +248,11 @@ void AProbotPawn::SafetyEvent(ITnErrors::EMotionCode SafetyProblem)
     // subtract 201 because this is the value of the first Safety enum.
     // It may break easily but we don't have another way to print the enum
     // Refer to ITnErros.h, EMotionCode
-    UAirBlueprintLib::LogMessageString("Motion Model Safety problem detected: ", safetyEnumStr[SafetyProblem - 201], LogDebugLevel::Failure, 5.0f);
+    UAirBlueprintLib::LogMessageString("Motion Model Safety problem detected: ", safetyEnumStr[SafetyProblem - 201], LogDebugLevel::Failure, 15.0f);
+
+    // emit dummy collision signal using airsim so we have indication using the API
+    UPrimitiveComponent* Component(NULL);
+    pawn_events_.getCollisionSignal().emit(Component, this, Component, true, FVector(EForceInit::ForceInitToZero), FVector(EForceInit::ForceInitToZero), FVector(EForceInit::ForceInitToZero), FHitResult());
 }
 
 void AProbotPawn::updateHUDStrings()
