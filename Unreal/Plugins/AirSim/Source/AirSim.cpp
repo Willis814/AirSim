@@ -21,17 +21,36 @@ void FAirSim::StartupModule()
 {
     //plugin startup
     UE_LOG(LogTemp, Log, TEXT("StartupModule: AirSim plugin"));
-    FString path = IPluginManager::Get().FindPlugin("AirSim")->GetBaseDir();
+    FString DepsDir = FPaths::Combine(IPluginManager::Get().FindPlugin("AirSim")->GetBaseDir(), TEXT("Source"), TEXT("AirLib"), TEXT("deps"));
+    FString ControlPath = FPaths::Combine(DepsDir, TEXT("ControlCore"), TEXT("lib"));
+    FString MotionPath = FPaths::Combine(DepsDir, TEXT("MotionCore"), TEXT("lib"));
+
+    FString ControlDll;
+    FString MotionDll;
+    FString ext;
+
+#if PLATFORM_WINDOWS
+    FString winPath = FPaths::Combine(TEXT("x64"), TEXT("Release"));
+    ext = TEXT(".dll");
+    ControlDll = FPaths::Combine(winPath, TEXT("ControlCore"));
+    MotionDll = FPaths::Combine(winPath, TEXT("MotionCore"));
+#elif PLATFORM_LINUX
+    FString prefix = TEXT("lib");
+    ext = TEXT(".so");
+    ControlDll = prefix + TEXT("ControlCore");
+    MotionDll = prefix + TEXT("MotionCore");
+#endif
+
     {
-        FString dllpath = path + "/Source/AirLib/deps/ControlCore/lib/x64/Release/ControlCore.dll";
-        ControlCoreDllHandle = FPlatformProcess::GetDllHandle(*dllpath);
+        FString DllPath = FPaths::Combine(ControlPath, ControlDll + ext);
+        ControlCoreDllHandle = FPlatformProcess::GetDllHandle(*DllPath);
         if (!ControlCoreDllHandle) {
             UE_LOG(LogTemp, Error, TEXT("Failed to load ControlCore library."));
         }
     }
     {
-        FString dllpath = path + "/Source/AirLib/deps/MotionCore/lib/x64/Release/MotionCore.dll";
-        MotionCoreDllHandle = FPlatformProcess::GetDllHandle(*dllpath);
+        FString DllPath = FPaths::Combine(MotionPath, MotionDll + ext);
+        MotionCoreDllHandle = FPlatformProcess::GetDllHandle(*DllPath);
         if (!MotionCoreDllHandle) {
             UE_LOG(LogTemp, Error, TEXT("Failed to load MotionCore library."));
         }
