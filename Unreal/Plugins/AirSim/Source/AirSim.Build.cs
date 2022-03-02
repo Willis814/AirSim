@@ -42,7 +42,11 @@ public class AirSim : ModuleRules
 
     private void SetupCompileMode(CompileMode mode, ReadOnlyTargetRules Target)
     {
-        PublicAdditionalLibraries.Add(Path.Combine(AirLibPath, "deps", "MotionCore", "lib","ExcelFormat" + ".a"));
+        if (Target.Platform == UnrealTargetPlatform.Linux)
+        {
+            PublicAdditionalLibraries.Add(Path.Combine(AirLibPath, "deps", "MotionCore", "lib", "ExcelFormat" + ".a"));
+        }
+
         LoadAirSimDependency(Target, "MavLinkCom", "MavLinkCom");
         LoadAirSimDependency(Target, "ControlCore", "ControlCore", "ControlCore");
         LoadAirSimDependency(Target, "MotionCore", "MotionCore", "MotionCore");
