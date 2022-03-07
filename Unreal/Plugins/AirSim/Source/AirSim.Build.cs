@@ -174,7 +174,7 @@ public class AirSim : ModuleRules
             {
                 //PublicAdditionalLibraries.Add(DllFileName + ".so");
                 PublicAdditionalLibraries.Add(Path.Combine(LibPath, "lib" + DllFileName + ".so"));
-                PublicDelayLoadDLLs.Add(Path.Combine(LibPath, "lib" + DllFileName + ".so"));
+                //PublicDelayLoadDLLs.Add(Path.Combine(LibPath, "lib" + DllFileName + ".so"));
                 RuntimeDependencies.Add(Path.Combine(LibPath, "lib" + DllFileName + ".so"));
             }
         }

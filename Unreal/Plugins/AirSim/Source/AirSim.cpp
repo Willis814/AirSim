@@ -47,12 +47,18 @@ void FAirSim::StartupModule()
         if (!ControlCoreDllHandle) {
             UE_LOG(LogTemp, Error, TEXT("Failed to load ControlCore library."));
         }
+        else {
+            UE_LOG(LogTemp, Log, TEXT("ControlCore library loaded successfully."));
+        }
     }
     {
         FString DllPath = FPaths::Combine(MotionPath, MotionDll + ext);
         MotionCoreDllHandle = FPlatformProcess::GetDllHandle(*DllPath);
         if (!MotionCoreDllHandle) {
             UE_LOG(LogTemp, Error, TEXT("Failed to load MotionCore library."));
+        }
+        else {
+            UE_LOG(LogTemp, Log, TEXT("MotionCore library loaded successfully."));
         }
     }
 }
