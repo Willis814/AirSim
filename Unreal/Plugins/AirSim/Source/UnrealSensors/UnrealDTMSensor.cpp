@@ -106,13 +106,16 @@ void UUnrealDTMSensor::TickComponent(float DeltaTime, ELevelTick TickType, FActo
         InitRenderTarget();
     }
 
-    CaptureScene();
+    // this code cause crash in vulkan
+    // We not using gpu mode at the moment so remark
+    
+    //CaptureScene();
 
-    ENQUEUE_RENDER_COMMAND(FWritePixels)
-    (
-        [this](FRHICommandListImmediate& RHICmdList) {
-            ReadDepth();
-        });
+    //ENQUEUE_RENDER_COMMAND(FWritePixels)
+    //(
+    //    [this](FRHICommandListImmediate& RHICmdList) {
+    //        ReadDepth();
+    //    });
 }
 
 double UUnrealDTMSensor::GetTerrainHeight(double x, double y, bool bCheckInInitPos)
