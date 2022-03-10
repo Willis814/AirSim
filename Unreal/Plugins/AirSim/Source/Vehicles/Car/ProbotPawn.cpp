@@ -228,7 +228,7 @@ void AProbotPawn::GetTerrainMaterial(const STnVector3D& WorldPos, bool* bpMateri
     bool isHitFound = this->GetWorld()->LineTraceSingleByChannel(hitResult, FVector(WorldPos.y * 100.0, WorldPos.x * 100.0, pos.Z), FVector(WorldPos.y * 100.0, WorldPos.x * 100.0, -HALF_WORLD_MAX), ECC_WorldStatic, queryParams);
     if (isHitFound) {
         UMaterialInterface* material = hitResult.Component->GetMaterial(0);
-        if (material->IsValidLowLevel()) {
+        if (IsValid(material)) {
             const auto& foundVal = MaterialMapping.Find(material->GetName());
             if (foundVal) {
                 TerrainMaterialType.Type = (ITnMotionMaterial::ETerrainType)(uint8)foundVal->Key;
