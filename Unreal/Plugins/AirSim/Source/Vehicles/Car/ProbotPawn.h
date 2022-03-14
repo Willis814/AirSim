@@ -77,6 +77,7 @@ public:
     virtual void updateHUDStrings() override;
 
     void InitModel();
+    void LoadMaterialMappingTable();
 
 public:
     UPROPERTY(EditAnywhere, BlueprintReadWrite)

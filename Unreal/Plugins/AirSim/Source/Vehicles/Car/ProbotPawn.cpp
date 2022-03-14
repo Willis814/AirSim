@@ -21,20 +21,7 @@ AProbotPawn::AProbotPawn()
     , bSweep(false)
     , bCheckInInitPos(true)
 {
-    static ConstructorHelpers::FObjectFinder<UDataTable> material_mapping_finder(TEXT("DataTable'/Game/MaterialMappingTable.MaterialMappingTable'"), LOAD_Quiet | LOAD_NoWarn);
-    if (material_mapping_finder.Succeeded()) {
-        material_mapping_table = material_mapping_finder.Object;
-        for (auto it : material_mapping_table->GetRowMap()) {
-            FMaterialMapping* data = (FMaterialMapping*)(it.Value);
-            MaterialMapping.Add(data->Material.GetAssetName(), TTuple<ETerrainType, ETerrainSubType>(data->TerrainType, data->TerrainSubType));
-        }
-        isMaterialMappingFound = true;
-    }
-    else {
-        UAirBlueprintLib::LogMessageString("Cannot find material mapping table. Use default.",
-                                           "",
-                                           LogDebugLevel::Informational);
-    }
+    LoadMaterialMappingTable();
 }
 
 void AProbotPawn::BeginPlay()
@@ -283,6 +270,28 @@ void AProbotPawn::InitModel()
     }
     else {
         UAirBlueprintLib::LogMessageString("Motion Model couldn't be initialized", "", LogDebugLevel::Failure);
+    }
+}
+
+void AProbotPawn::LoadMaterialMappingTable()
+{
+    material_mapping_table = Cast<UDataTable>(StaticLoadObject(UDataTable::StaticClass(), NULL, TEXT("DataTable'/Game/MaterialMappingTable.MaterialMappingTable'")));
+    if (!material_mapping_table) {
+        UAirBlueprintLib::LogMessageString("Cannot find material mapping table. Use default.",
+                                           "",
+                                           LogDebugLevel::Informational);
+    }
+    else if (material_mapping_table->GetRowMap().Num() < 1) {
+        UAirBlueprintLib::LogMessageString("Material mapping table is empty. Use default.",
+                                           "",
+                                           LogDebugLevel::Informational);
+    }
+    else {
+        for (auto it : material_mapping_table->GetRowMap()) {
+            FMaterialMapping* data = (FMaterialMapping*)(it.Value);
+            MaterialMapping.Add(data->Material.GetAssetName(), TTuple<ETerrainType, ETerrainSubType>(data->TerrainType, data->TerrainSubType));
+        }
+        isMaterialMappingFound = true;
     }
 }
 
