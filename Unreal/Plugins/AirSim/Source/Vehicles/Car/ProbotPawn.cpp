@@ -66,11 +66,11 @@ void AProbotPawn::BeginPlay()
             UAirBlueprintLib::LogMessageString("Motion Model couldn't be generated", "", LogDebugLevel::Failure);
         }
 
-        InitPos = STnVector3D(GetActorLocation().X, GetActorLocation().Y, GetActorLocation().Z) / 100;
-        WorldToGlobalOffset = FVector(InitPos.y, InitPos.x, InitPos.z) * 100;
+        SetInitPosition(STnVector3D(GetActorLocation().X, GetActorLocation().Y, GetActorLocation().Z) / 100);
+        WorldToGlobalOffset = FVector(GetInitPosition().y, GetInitPosition().x, GetInitPosition().z) * 100;
 
-        InitYaw = (double)GetActorLocation().Rotation().Yaw;
-        InitModel();
+        SetInitYaw((double)GetRootComponent()->GetComponentRotation().Yaw);
+        InitModel(GetInitPosition(), GetInitYaw());
     }
 
     AddTickPrerequisiteComponent(DTMSensor);
@@ -261,10 +261,10 @@ void AProbotPawn::updateHUDStrings()
     UAirBlueprintLib::LogMessage(TEXT("Chassis Yaw: "), FText::AsNumber(MotionModel->GetChassisYaw()).ToString(), LogDebugLevel::Informational);
 }
 
-void AProbotPawn::InitModel()
+void AProbotPawn::InitModel(const STnVector3D Position, const double Yaw)
 {
     PreFirstUpdate();
-    ITnErrors::EMotionCode ret = MotionModel->Init(InitPos, InitYaw);
+    ITnErrors::EMotionCode ret = MotionModel->Init(Position, Yaw);
     if (ret == ITnErrors::EMotionCode::SUCCESS) {
         UAirBlueprintLib::LogMessageString("Motion Model initialized successfully", "", LogDebugLevel::Informational);
     }
@@ -293,6 +293,26 @@ void AProbotPawn::LoadMaterialMappingTable()
         }
         isMaterialMappingFound = true;
     }
+}
+
+STnVector3D AProbotPawn::GetInitPosition() const
+{
+    return InitPos;
+}
+
+double AProbotPawn::GetInitYaw() const
+{
+    return InitYaw;
+}
+
+void AProbotPawn::SetInitYaw(double Yaw)
+{
+    InitYaw = Yaw;
+}
+
+void AProbotPawn::SetInitPosition(STnVector3D Position)
+{
+    InitPos = Position;
 }
 
 #undef LOCTEXT_NAMESPACE

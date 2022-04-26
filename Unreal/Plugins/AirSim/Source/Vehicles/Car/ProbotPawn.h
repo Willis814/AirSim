@@ -76,8 +76,11 @@ public:
     // ACarPawn override
     virtual void updateHUDStrings() override;
 
-    void InitModel();
+    void InitModel(const STnVector3D Position, const double Yaw);
     void LoadMaterialMappingTable();
+
+    STnVector3D GetInitPosition() const;
+    double GetInitYaw() const;
 
 public:
     UPROPERTY(EditAnywhere, BlueprintReadWrite)
@@ -98,6 +101,7 @@ public:
     float MaxSteering;
 
     ITnVehicleMotionModel* MotionModel;
+    FVector WorldToGlobalOffset;
 
 private:
     inline void DoPhysics(float DeltaTime);
@@ -105,12 +109,14 @@ private:
     void PreFirstUpdate();
     void PostFirstUpdate();
 
+    void SetInitPosition(STnVector3D Position);
+    void SetInitYaw(double Yaw);
+
 private:
     float VehicleSpeed;
     float SlowMoFactor;
     STnVector3D InitPos;
     double InitYaw;
-    FVector WorldToGlobalOffset;
     bool isMaterialMappingFound;
     bool bSweep;
     bool bCheckInInitPos;

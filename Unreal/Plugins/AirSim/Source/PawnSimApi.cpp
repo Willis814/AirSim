@@ -14,6 +14,12 @@
 #include "Materials/MaterialParameterCollectionInstance.h"
 #include "DrawDebugHelpers.h"
 
+#ifdef PLATFORM_WINDOWS
+#include "Windows/MinWindows.h"
+#endif
+
+#include "vehicles/Car/ProbotPawn.h"
+
 PawnSimApi::PawnSimApi(const Params& params)
     : params_(params), ned_transform_(params.pawn, *params.global_transform)
 {
@@ -467,6 +473,11 @@ void PawnSimApi::setPoseInternal(const Pose& pose, bool ignore_collision)
     }
     else if (!state_.tracing_enabled) {
         state_.last_position = position;
+    }
+    if (params_.pawn->IsA(AProbotPawn::StaticClass())) {
+        const auto probot_pawn = static_cast<AProbotPawn*>(params_.pawn);
+        probot_pawn->WorldToGlobalOffset = FVector(position.Y, position.X, position.Z);
+        probot_pawn->InitModel(STnVector3D(position.X, position.Y, position.Z) / 100, orientation.Euler().Z);
     }
 }
 

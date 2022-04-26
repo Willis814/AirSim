@@ -52,7 +52,9 @@ msr::airlib::CarApiBase::CarState ProbotPawnApi::getCarState() const
 void ProbotPawnApi::reset()
 {
     CarPawnApi::reset();
-    pawn_->InitModel();
+
+    pawn_->WorldToGlobalOffset = FVector((pawn_->GetInitPosition().y, pawn_->GetInitPosition().x, pawn_->GetInitPosition().z) * 100);
+    pawn_->InitModel(pawn_->GetInitPosition(), pawn_->GetInitYaw());
 }
 
 ProbotPawnApi::~ProbotPawnApi() = default;
