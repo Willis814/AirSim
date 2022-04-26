@@ -30,7 +30,7 @@ void UUnrealDTMSensor::BeginPlay()
 {
     InitRenderTarget();
     Super::BeginPlay();
-    InitPos = GetComponentLocation();
+    InitPos = GetOwner()->GetActorLocation() + GetComponentLocation();
 }
 
 void UUnrealDTMSensor::EndPlay(const EEndPlayReason::Type EndPlayReason)

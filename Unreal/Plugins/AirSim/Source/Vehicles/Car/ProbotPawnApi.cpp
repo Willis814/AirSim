@@ -53,7 +53,7 @@ void ProbotPawnApi::reset()
 {
     CarPawnApi::reset();
 
-    pawn_->WorldToGlobalOffset = FVector((pawn_->GetInitPosition().y, pawn_->GetInitPosition().x, pawn_->GetInitPosition().z) * 100);
+    pawn_->WorldToGlobalOffset = FVector(pawn_->GetInitPosition().y, pawn_->GetInitPosition().x, pawn_->GetInitPosition().z) * 100;
     pawn_->InitModel(pawn_->GetInitPosition(), pawn_->GetInitYaw());
 }
 

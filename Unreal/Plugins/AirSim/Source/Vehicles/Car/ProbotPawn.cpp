@@ -66,7 +66,7 @@ void AProbotPawn::BeginPlay()
             UAirBlueprintLib::LogMessageString("Motion Model couldn't be generated", "", LogDebugLevel::Failure);
         }
 
-        SetInitPosition(STnVector3D(GetActorLocation().X, GetActorLocation().Y, GetActorLocation().Z) / 100);
+        SetInitPosition(STnVector3D(GetActorLocation().Y, GetActorLocation().X, GetActorLocation().Z) / 100);
         WorldToGlobalOffset = FVector(GetInitPosition().y, GetInitPosition().x, GetInitPosition().z) * 100;
 
         SetInitYaw((double)GetRootComponent()->GetComponentRotation().Yaw);
