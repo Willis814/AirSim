@@ -98,7 +98,6 @@ void AProbotPawn::NotifyHit(class UPrimitiveComponent* MyComp, class AActor* Oth
 
 void AProbotPawn::DoPhysics(float DeltaTime)
 {
-    DeltaTime = FMath::Min(DeltaTime, 0.05f);
     MotionModel->Update(DeltaTime * SlowMoFactor);
 }
 
