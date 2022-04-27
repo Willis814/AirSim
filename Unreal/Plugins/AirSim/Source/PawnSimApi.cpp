@@ -14,11 +14,11 @@
 #include "Materials/MaterialParameterCollectionInstance.h"
 #include "DrawDebugHelpers.h"
 
-#ifdef PLATFORM_WINDOWS
+#if PLATFORM_WINDOWS
 #include "Windows/MinWindows.h"
 #endif
 
-#include "vehicles/Car/ProbotPawn.h"
+#include "Vehicles/Car/ProbotPawn.h"
 
 PawnSimApi::PawnSimApi(const Params& params)
     : params_(params), ned_transform_(params.pawn, *params.global_transform)
