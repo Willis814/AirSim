@@ -5,9 +5,12 @@
 #include "CoreMinimal.h"
 #include "CarPawn.h"
 
+THIRD_PARTY_INCLUDES_START
 #include <MotionCore/ITnAppItem.h>
 #include <MotionCore/ITnMotionQueries.h>
 #include <MotionCore/ITnPhysicalItemBinder.h>
+THIRD_PARTY_INCLUDES_END
+
 #include <MaterialMapping.h>
 
 #include "ProbotPawn.generated.h"
