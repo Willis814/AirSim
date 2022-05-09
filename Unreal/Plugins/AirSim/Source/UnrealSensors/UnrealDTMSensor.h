@@ -14,7 +14,7 @@ class UUnrealDTMSensor : public USceneCaptureComponent2D
     GENERATED_BODY()
 
 public:
-    double GetTerrainHeight(double x, double y, bool bCheckInInitPos);
+    double GetTerrainHeight(double x, double y, const bool bCheckInInitPos, const bool is_teleport, const float teleport_height);
 
     UPROPERTY(EditAnywhere)
     bool IsForceCPU;

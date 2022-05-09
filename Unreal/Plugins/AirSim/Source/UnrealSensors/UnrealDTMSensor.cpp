@@ -118,7 +118,7 @@ void UUnrealDTMSensor::TickComponent(float DeltaTime, ELevelTick TickType, FActo
     //    });
 }
 
-double UUnrealDTMSensor::GetTerrainHeight(double x, double y, bool bCheckInInitPos)
+double UUnrealDTMSensor::GetTerrainHeight(double x, double y, const bool bCheckInInitPos, const bool is_teleport, const float teleport_height)
 {
     bool IsNoHeightMap = false;
 
@@ -154,7 +154,12 @@ double UUnrealDTMSensor::GetTerrainHeight(double x, double y, bool bCheckInInitP
         FVector startPos;
         startPos.X = x;
         startPos.Y = y;
-        startPos.Z = bCheckInInitPos ? InitPos.Z : GetComponentLocation().Z;
+        if (is_teleport) {
+            startPos.Z = teleport_height * 100;
+        }
+        else {
+            startPos.Z = bCheckInInitPos ? InitPos.Z : GetComponentLocation().Z;
+        }
 
         FVector endPos = startPos;
         endPos.Z = -HALF_WORLD_MAX;

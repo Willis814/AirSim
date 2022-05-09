@@ -476,7 +476,7 @@ void PawnSimApi::setPoseInternal(const Pose& pose, bool ignore_collision)
     if (params_.pawn->IsA(AProbotPawn::StaticClass())) {
         const auto probot_pawn = static_cast<AProbotPawn*>(params_.pawn);
         probot_pawn->WorldToGlobalOffset = FVector(position.Y, position.X, position.Z);
-        probot_pawn->InitModel(STnVector3D(position.X, position.Y, position.Z) / 100, orientation.Euler().Z);
+        probot_pawn->InitModel(STnVector3D(position.X, position.Y, position.Z) / 100, orientation.Euler().Z, true);
     }
 }
 

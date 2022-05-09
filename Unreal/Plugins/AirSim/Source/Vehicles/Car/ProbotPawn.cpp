@@ -101,16 +101,18 @@ void AProbotPawn::DoPhysics(float DeltaTime)
     MotionModel->Update(DeltaTime * SlowMoFactor);
 }
 
-void AProbotPawn::PreFirstUpdate()
+void AProbotPawn::PreFirstUpdate(const STnVector3D& Position)
 {
     bSweep = false;
     bCheckInInitPos = true;
+    SetTeleportHeight(Position.z);
 }
 
 void AProbotPawn::PostFirstUpdate()
 {
     bSweep = true;
     bCheckInInitPos = false;
+    SetIsTeleport(false);
 }
 
 void AProbotPawn::Bind(ITnPhysicalItem* pItem)
@@ -197,7 +199,7 @@ void AProbotPawn::GetTerrainHeight(double x, double y, bool* isFound, double* pd
     y *= 100.0;
     *isFound = true;
 
-    *pdHeight = DTMSensor->GetTerrainHeight(x, y, bCheckInInitPos) / 100.0;
+    *pdHeight = DTMSensor->GetTerrainHeight(x, y, bCheckInInitPos, GetIsTeleport(), GetTeleportHeight()) / 100.0;
 }
 
 void AProbotPawn::GetTerrainMaterial(const STnVector3D& WorldPos, bool* bpMaterialFound, ITnMotionMaterial::STerrainMaterialType& TerrainMaterialType)
@@ -260,9 +262,10 @@ void AProbotPawn::updateHUDStrings()
     UAirBlueprintLib::LogMessage(TEXT("Chassis Yaw: "), FText::AsNumber(MotionModel->GetChassisYaw()).ToString(), LogDebugLevel::Informational);
 }
 
-void AProbotPawn::InitModel(const STnVector3D Position, const double Yaw)
+void AProbotPawn::InitModel(const STnVector3D Position, const double Yaw, const bool is_teleport)
 {
-    PreFirstUpdate();
+    SetIsTeleport(is_teleport);
+    PreFirstUpdate(Position);
     ITnErrors::EMotionCode ret = MotionModel->Init(Position, Yaw);
     if (ret == ITnErrors::EMotionCode::SUCCESS) {
         UAirBlueprintLib::LogMessageString("Motion Model initialized successfully", "", LogDebugLevel::Informational);
@@ -302,6 +305,26 @@ STnVector3D AProbotPawn::GetInitPosition() const
 double AProbotPawn::GetInitYaw() const
 {
     return InitYaw;
+}
+
+float AProbotPawn::GetTeleportHeight() const
+{
+    return teleport_height_;
+}
+
+bool AProbotPawn::GetIsTeleport() const
+{
+    return is_teleport_;
+}
+
+void AProbotPawn::SetIsTeleport(bool val)
+{
+    is_teleport_ = val;
+}
+
+void AProbotPawn::SetTeleportHeight(float val)
+{
+    teleport_height_ = val;
 }
 
 void AProbotPawn::SetInitYaw(double Yaw)

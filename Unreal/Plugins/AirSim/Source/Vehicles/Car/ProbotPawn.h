@@ -79,11 +79,16 @@ public:
     // ACarPawn override
     virtual void updateHUDStrings() override;
 
-    void InitModel(const STnVector3D Position, const double Yaw);
+    void InitModel(const STnVector3D Position, const double Yaw, const bool is_teleport = false);
+
     void LoadMaterialMappingTable();
 
     STnVector3D GetInitPosition() const;
     double GetInitYaw() const;
+
+    float GetTeleportHeight() const;
+
+    bool GetIsTeleport() const;
 
 public:
     UPROPERTY(EditAnywhere, BlueprintReadWrite)
@@ -109,11 +114,13 @@ public:
 private:
     inline void DoPhysics(float DeltaTime);
 
-    void PreFirstUpdate();
+    void PreFirstUpdate(const STnVector3D& Position = STnVector3D(0, 0, 0));
     void PostFirstUpdate();
 
     void SetInitPosition(STnVector3D Position);
     void SetInitYaw(double Yaw);
+    void SetIsTeleport(bool val);
+    void SetTeleportHeight(float val);
 
 private:
     float VehicleSpeed;
@@ -123,6 +130,8 @@ private:
     bool isMaterialMappingFound;
     bool bSweep;
     bool bCheckInInitPos;
+    bool is_teleport_;
+    float teleport_height_;
 
     UPROPERTY()
     UDataTable* material_mapping_table;
