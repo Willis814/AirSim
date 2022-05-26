@@ -26,7 +26,7 @@ def generate_launch_description():
         package='tf2_ros',
         executable='static_transform_publisher',
         name='probot_odom_to_base_link_pub',
-        arguments=['0', '0', '0', '0', '0', '0', 'Probot/odom_local_ned', 'base_link']
+        arguments=['0.424', '0', '0', '0', '0', '0', 'Probot/odom_local_ned', 'base_link']
     )
 
     # Create the launch description and populate
