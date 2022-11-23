@@ -30,8 +30,8 @@ void AProbotPawn::BeginPlay()
 
     if (MotionModel == nullptr) {
         MotionModel = ITnMotionCore::CreateVehicleMotionModel3D(this, this);
-        MotionModel->SetListender(this);
-        MotionModel->SetSafetyProblemReport(this);
+        MotionModel->SetUpdateListener(this);
+        MotionModel->SetSafetyListener(this);
 
         FString baseDir = FPaths::Combine(IPluginManager::Get().FindPlugin("AirSim")->GetBaseDir(), TEXT("/Source/AirLib/deps/MotionCore/"));
         FString configFilename;
@@ -42,11 +42,20 @@ void AProbotPawn::BeginPlay()
             UAirBlueprintLib::ShowMessage(EAppMsgType::Ok, "ProbotPawn: ModelType can't be None", "Error");
             break;
         case EModelType::Probot:
-            configFilename = "Probot3DMulti.xls";
+            configFilename = "vehicleDataProbot.yaml";
             break;
         case EModelType::Rook:
-            configFilename = "Rook3DMulti.xls";
+            configFilename = "vehicleDataRook.yaml";
             break;
+        case EModelType::Ford350:
+            configFilename = "vehicleDataFord350.yaml";
+            break;
+        case EModelType::Tomcar:
+            configFilename = "vehicleDataTomcar.yaml";
+            break;
+        case EModelType::Hummer:
+            configFilename = "vehicleDataHummer.yaml";
+            break;            
         }
 
         FString configFilePath = FPaths::Combine(baseDir, configFilename);
@@ -150,10 +159,10 @@ void AProbotPawn::OnUpdate(ITnPhysicalItem** pITnPhysicalItemsArray, int numItem
 
             const char* tag = pITnPhysicalItem->GetTag();
             ITnPhysicalItem::EPhysicalItemType eType = pITnPhysicalItem->GetType();
-            STnFVector3D ItemPosition;
+            STnVector3D ItemPosition;
             STnRotation ItemRotation;
 
-            if (eType == ITnPhysicalItem::EPIT_WHEEL) {
+            if (eType == ITnPhysicalItem::EPIT_WHEEL || eType == ITnPhysicalItem::EPIT_ARM || eType == ITnPhysicalItem::EPIT_SPRING) {
                 ItemPosition = pITnPhysicalItem->GetRelativePosition();
                 ItemRotation = pITnPhysicalItem->GetRelativeRotation();
             }
@@ -166,13 +175,19 @@ void AProbotPawn::OnUpdate(ITnPhysicalItem** pITnPhysicalItemsArray, int numItem
             FVector Location = FVector(ItemPosition.y, ItemPosition.x, ItemPosition.z);
             FRotator Rotation = FRotator(ItemRotation.fPitch, ItemRotation.fYaw, ItemRotation.fRoll);
 
-            if (eType == ITnPhysicalItem::EPIT_WHEEL) {
+            if (eType == ITnPhysicalItem::EPIT_WHEEL || eType == ITnPhysicalItem::EPIT_ARM || eType == ITnPhysicalItem::EPIT_SPRING) {
                 pSaticMesh->SetRelativeLocation(Location, bSweep);
                 pSaticMesh->SetRelativeRotation(Rotation, bSweep);
             }
             else {
                 pSaticMesh->SetWorldLocation(Location + WorldToGlobalOffset, bSweep);
                 pSaticMesh->SetWorldRotation(Rotation, bSweep);
+            }
+
+            if (eType == ITnPhysicalItem::EPIT_SPRING) {
+                ITnSpringPhysicalItem* pITnSpringPhysicalItem = dynamic_cast<ITnSpringPhysicalItem*>(pITnPhysicalItem);
+                STnVector3D Scale = pITnSpringPhysicalItem->GetScale();
+                pSaticMesh->SetWorldScale3D(FVector(Scale.y, Scale.x, Scale.z));
             }
 
             if (FString(tag).Equals("CHASSIS")) {
@@ -190,6 +205,13 @@ void AProbotPawn::OnUpdate(ITnPhysicalItem** pITnPhysicalItemsArray, int numItem
 bool AProbotPawn::OnCollision(ITnCollisionPointPhysicalItem** pITnCollisionPointsArray, int numItems)
 {
     return false;
+}
+
+void AProbotPawn::GetTerrainHeightArray(STnVector2D*& WorldPos_Array, bool*& bpHeightFound_Array, double*& pdHeight_Array, int numPoints)
+{
+    for (size_t i = 0; i < numPoints; i++) {
+        GetTerrainHeight(WorldPos_Array[i].x, WorldPos_Array[i].y, &bpHeightFound_Array[i], &pdHeight_Array[i]);
+    }
 }
 
 void AProbotPawn::GetTerrainHeight(double x, double y, bool* isFound, double* pdHeight)
@@ -259,7 +281,7 @@ void AProbotPawn::updateHUDStrings()
     MotionModel->GetEnginesRPM(RPM_R, RPM_L);
     UAirBlueprintLib::LogMessage(TEXT("RPM R: "), FText::AsNumber(RPM_R).ToString(), LogDebugLevel::Informational);
     UAirBlueprintLib::LogMessage(TEXT("RPM L: "), FText::AsNumber(RPM_L).ToString(), LogDebugLevel::Informational);
-    UAirBlueprintLib::LogMessage(TEXT("Chassis Yaw: "), FText::AsNumber(MotionModel->GetChassisYaw()).ToString(), LogDebugLevel::Informational);
+    UAirBlueprintLib::LogMessage(TEXT("Chassis Yaw: "), FText::AsNumber(MotionModel->GetVehicleYaw_LC()).ToString(), LogDebugLevel::Informational);
 }
 
 void AProbotPawn::InitModel(const STnVector3D Position, const double Yaw, const bool is_teleport)

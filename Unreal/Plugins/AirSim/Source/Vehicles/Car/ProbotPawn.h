@@ -6,6 +6,7 @@
 #include "CarPawn.h"
 
 THIRD_PARTY_INCLUDES_START
+#include <MotionCore/ITnMotionModel.h>
 #include <MotionCore/ITnAppItem.h>
 #include <MotionCore/ITnMotionQueries.h>
 #include <MotionCore/ITnPhysicalItemBinder.h>
@@ -37,13 +38,16 @@ enum class EModelType : uint8
 {
     None,
     Probot,
-    Rook
+    Rook,
+    Ford350,
+    Tomcar,
+    Hummer
 };
 
 UCLASS(config = Game)
 class AProbotPawn : public ACarPawn
-    , public ITnWheeledVehicleMotionModelListener
-    , public ITnMotionModelSafetyProblemReport
+    , public ITnMotionModelUpdateListener
+    , public ITnMotionModelSafetyListener
     , public ITnMotionQueries
     , public ITnPhysicalItemBinder
 {
@@ -65,16 +69,15 @@ public:
 
     // ITnMotionQueries override
     virtual void GetTerrainHeight(double x, double y, bool* isHeightFound, double* pdHeight) override;
+    virtual void GetTerrainHeightArray(STnVector2D*& WorldPos_Array, bool*& bpHeightFound_Array, double*& pdHeight_Array, int numPoints) override;
     virtual void GetTerrainMaterial(const STnVector3D& WorldPos, bool* bpMaterialFound, ITnMotionMaterial::STerrainMaterialType& TerrainMaterialType) override;
     virtual void GetTerrainMoisture(const STnVector3D& WorldPos, bool* bpMoistureFound, double& moisture) override;
 
-    // ITnWheeledVehicleMotionModelListener override
-    virtual void StartTimer() override {}
-    virtual void OnDataUpdate(double timeSeconds) override {}
-    virtual double GetTimeSeconds() override { return 0; }
-
-    // ITnMotionModelSafetyProblemReport override
+    // ITnMotionModelSafetyListener overide
     virtual void SafetyEvent(ITnErrors::EMotionCode SafetyProblem) override;
+    
+    // ITnMotionModelUpdateListener override
+    virtual void OnDataUpdate(double timeSeconds) override {}
 
     // ACarPawn override
     virtual void updateHUDStrings() override;
@@ -146,7 +149,6 @@ static const char* safetyEnumStr[] = {
     "MAX_SLIP_PERCENT_DETECTED",
     "MAX_DELTA_WHEEL_DETECTED",
     "MAX_NEGATIVE_VELOCITY_DETECTED",
-    "MAX_DEVIATION_FROM_PATH_DETECTED",
     "COLLISION_DETECTED",
     "EXTERNAL_COLLISION_DETECTED",
     "TERRAIN_HEIGHT_PROBLEM_DETECTED",
