@@ -104,6 +104,8 @@ public class AirSim : ModuleRules
         AddMotionCoreConfigFiles(Path.Combine(AirLibPath, "deps", "MotionCore"));
 
         SetupCompileMode(CompileMode.HeaderOnlyWithRpc, Target);
+
+        bUseRTTI = true;
     }
 
     private void AddOSLibDependencies(ReadOnlyTargetRules Target)
