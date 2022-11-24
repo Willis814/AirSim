@@ -209,9 +209,9 @@ bool AProbotPawn::OnCollision(ITnCollisionPointPhysicalItem** pITnCollisionPoint
 
 void AProbotPawn::GetTerrainHeightArray(STnVector2D*& WorldPos_Array, bool*& bpHeightFound_Array, double*& pdHeight_Array, int numPoints)
 {
-    for (size_t i = 0; i < numPoints; i++) {
-        GetTerrainHeight(WorldPos_Array[i].x, WorldPos_Array[i].y, &bpHeightFound_Array[i], &pdHeight_Array[i]);
-    }
+    ParallelFor(numPoints, [&](int32 idx) {
+        GetTerrainHeight(WorldPos_Array[idx].x, WorldPos_Array[idx].y, &bpHeightFound_Array[idx], &pdHeight_Array[idx]);
+    });
 }
 
 void AProbotPawn::GetTerrainHeight(double x, double y, bool* isFound, double* pdHeight)
