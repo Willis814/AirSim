@@ -75,7 +75,7 @@ public:
 
     // ITnMotionModelSafetyListener overide
     virtual void SafetyEvent(ITnErrors::EMotionCode SafetyProblem) override;
-    
+
     // ITnMotionModelUpdateListener override
     virtual void OnDataUpdate(double timeSeconds) override {}
 

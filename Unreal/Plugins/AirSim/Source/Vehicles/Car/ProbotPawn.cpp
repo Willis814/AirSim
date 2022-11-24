@@ -55,7 +55,7 @@ void AProbotPawn::BeginPlay()
             break;
         case EModelType::Hummer:
             configFilename = "vehicleDataHummer.yaml";
-            break;            
+            break;
         }
 
         FString configFilePath = FPaths::Combine(baseDir, configFilename);
