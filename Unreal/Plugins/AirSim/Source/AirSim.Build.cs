@@ -192,7 +192,7 @@ public class AirSim : ModuleRules
 
     private void AddMotionCoreConfigFiles(string path)
     {
-        string[] configFiles = { "Probot3DMulti.xls", "Rook3DMulti.xls" };
+        string[] configFiles = Directory.GetFiles(path, "*.yaml");
 
         for (int i = 0; i < configFiles.Length; i++)
         {
