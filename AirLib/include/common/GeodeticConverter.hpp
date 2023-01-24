@@ -106,8 +106,8 @@ namespace airlib
             vect(1) = y - home_ecef_y_;
             vect(2) = z - home_ecef_z_;
             ret = ecef_to_ned_matrix_ * vect;
-            *north = ret(0);
-            *east = ret(1);
+            *north = -ret(1);
+            *east = ret(0);
             *down = -ret(2);
         }
 
@@ -116,8 +116,8 @@ namespace airlib
         {
             // NED (north/east/down) to ECEF coordinates
             Vector3d ned, ret;
-            ned(0) = north;
-            ned(1) = east;
+            ned(0) = -east;
+            ned(1) = north;
             ned(2) = -down;
             ret = ned_to_ecef_matrix_ * ned;
             *x = ret(0) + home_ecef_x_;
