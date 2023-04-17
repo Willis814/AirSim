@@ -756,7 +756,9 @@ void APIPCamera::setFocusAperture(float focus_aperture)
 
 void APIPCamera::enableFocusPlane(bool enable)
 {
+#if WITH_EDITOR
     camera_->FocusSettings.bDrawDebugFocusPlane = enable;
+#endif
 }
 
 std::string APIPCamera::getCurrentFieldOfView() const
@@ -778,7 +780,6 @@ void APIPCamera::copyCameraSettingsToSceneCapture(UCameraComponent* src, USceneC
 {
     if (src && dst) {
         dst->SetWorldLocationAndRotation(src->GetComponentLocation(), src->GetComponentRotation());
-        dst->FOVAngle = src->FieldOfView;
 
         FMinimalViewInfo camera_view_info;
         src->GetCameraView(/*DeltaTime =*/0.0f, camera_view_info);

@@ -7,7 +7,6 @@
 #include "SimMode/SimModeBase.h"
 #include "Components/StaticMeshComponent.h"
 #include "Runtime/Engine/Classes/Engine/StaticMesh.h"
-#include "Engine/LevelStreamingDynamic.h"
 #include <string>
 
 class WorldSimApi : public msr::airlib::WorldSimApiBase
@@ -76,6 +75,7 @@ public:
     virtual bool isRecording() const override;
 
     virtual void setWind(const Vector3r& wind) const override;
+    virtual void setExtForce(const Vector3r& ext_force) const override;
     virtual bool createVoxelGrid(const Vector3r& position, const int& x_size, const int& y_size, const int& z_size, const float& res, const std::string& output_file) override;
     virtual std::vector<std::string> listVehicles() const override;
 
@@ -126,6 +126,5 @@ private:
 
 private:
     ASimModeBase* simmode_;
-    ULevelStreamingDynamic* current_level_;
     std::vector<bool> voxel_grid_;
 };

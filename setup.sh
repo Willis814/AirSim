@@ -78,6 +78,10 @@ if [ "$(uname)" == "Darwin" ]; then # osx
         sudo dseditgroup -o edit -a "$(whoami)" -t user dialout
     fi
 
+    # MacOS 11 has new Python env management that breaks the Python 2-to-3
+    # build process. We need to make sure brew updates before attempting to
+    # install, since it will update packaages
+    brew update
     brew_install wget
     brew_install coreutils
 
@@ -166,7 +170,7 @@ if $downloadHighPolySuv; then
             fi
             mkdir -p "suv_download_tmp"
             cd suv_download_tmp
-            wget  https://github.com/Microsoft/AirSim/releases/download/v1.2.0/car_assets.zip
+            wget  https://github.com/CodexLabsLLC/Colosseum/releases/download/v2.0.0-beta.0/car_assets.zip
             if [ -d "../Unreal/Plugins/AirSim/Content/VehicleAdv/SUV" ]; then
                 rm -rf "../Unreal/Plugins/AirSim/Content/VehicleAdv/SUV"
             fi

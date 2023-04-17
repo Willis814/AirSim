@@ -4,7 +4,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "Runtime/AssetRegistry/Public/AssetRegistryModule.h"
+#include "AssetRegistry/AssetRegistryModule.h"
 #include "GameFramework/Actor.h"
 #include "Components/InputComponent.h"
 #include "EngineUtils.h"
@@ -19,14 +19,11 @@
 #include "Engine/World.h"
 #include "Runtime/Landscape/Classes/LandscapeComponent.h"
 #include "Runtime/Engine/Classes/Kismet/GameplayStatics.h"
-#include "AirsimLevelStreaming.h"
 #include "Runtime/Core/Public/HAL/FileManager.h"
 #include "common/AirSimSettings.hpp"
 #include <string>
 #include <regex>
 #include "AirBlueprintLib.generated.h"
-
-class ULevelStreamingDynamic;
 
 UENUM(BlueprintType)
 enum class LogDebugLevel : uint8
@@ -74,11 +71,9 @@ public:
         UGameplayStatics::GetAllActorsOfClass(context, T::StaticClass(), foundActors);
     }
 
-    static ULevelStreamingDynamic* CURRENT_LEVEL;
-
     static std::vector<std::string> ListMatchingActors(const UObject* context, const std::string& name_regex);
     UFUNCTION(BlueprintCallable, Category = "AirSim|LevelAPI")
-    static ULevelStreamingDynamic* loadLevel(UObject* context, const FString& level_name);
+    static bool loadLevel(UObject* context, const FString& level_name);
     UFUNCTION(BlueprintCallable, Category = "AirSim|LevelAPI")
     static bool spawnPlayer(UWorld* context);
     UFUNCTION(BlueprintPure, Category = "AirSim|LevelAPI")

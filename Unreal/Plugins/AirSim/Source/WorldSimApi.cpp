@@ -24,18 +24,10 @@ bool WorldSimApi::loadLevel(const std::string& level_name)
     // Add loading screen to viewport
     simmode_->toggleLoadingScreen(true);
     std::this_thread::sleep_for(0.1s);
-    UAirBlueprintLib::RunCommandOnGameThread([this, level_name]() {
-        this->current_level_ = UAirBlueprintLib::loadLevel(this->simmode_->GetWorld(), FString(level_name.c_str()));
+    UAirBlueprintLib::RunCommandOnGameThread([this, level_name, &success]() {
+        success = UAirBlueprintLib::loadLevel(this->simmode_->GetWorld(), FString(level_name.c_str()));
     },
                                              true);
-
-    if (this->current_level_) {
-        success = true;
-        std::this_thread::sleep_for(1s);
-        spawnPlayer();
-    }
-    else
-        success = false;
 
     //Remove Loading screen from viewport
     UAirBlueprintLib::RunCommandOnGameThread([this, level_name]() {
@@ -725,6 +717,11 @@ bool WorldSimApi::isRecording() const
 void WorldSimApi::setWind(const Vector3r& wind) const
 {
     simmode_->setWind(wind);
+}
+
+void WorldSimApi::setExtForce(const Vector3r& ext_force) const
+{
+    simmode_->setExtForce(ext_force);
 }
 
 std::vector<std::string> WorldSimApi::listVehicles() const
