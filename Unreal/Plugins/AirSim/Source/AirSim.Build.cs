@@ -42,10 +42,6 @@ public class AirSim : ModuleRules
 
     private void SetupCompileMode(CompileMode mode, ReadOnlyTargetRules Target)
     {
-        if (Target.Platform == UnrealTargetPlatform.Linux)
-        {
-            PublicAdditionalLibraries.Add(Path.Combine(AirLibPath, "deps", "MotionCore", "lib", "ExcelFormat" + ".a"));
-        }
 
         LoadAirSimDependency(Target, "MavLinkCom", "MavLinkCom");
         LoadAirSimDependency(Target, "MotionCore", "MotionCore", "MotionCore");
@@ -86,7 +82,7 @@ public class AirSim : ModuleRules
 
         bEnableExceptions = true;
 
-        PublicDependencyModuleNames.AddRange(new string[] { "Core", "CoreUObject", "Engine", "InputCore", "ImageWrapper", "RenderCore", "RHI", "PhysicsCore", "AssetRegistry", "ChaosVehicles", "Landscape", "CinematicCamera" });
+        PublicDependencyModuleNames.AddRange(new string[] { "Core", "CoreUObject", "Engine", "InputCore", "ImageWrapper", "RenderCore", "RHI", "PhysicsCore", "AssetRegistry", "ChaosVehicles", "Landscape", "CinematicCamera", "Projects" });
         PrivateDependencyModuleNames.AddRange(new string[] { "UMG", "Slate", "SlateCore", "RenderCore" });
 
         //suppress VC++ proprietary warnings
@@ -103,7 +99,6 @@ public class AirSim : ModuleRules
 
         SetupCompileMode(CompileMode.HeaderOnlyWithRpc, Target);
 
-        bUseRTTI = true;
     }
 
     private void AddOSLibDependencies(ReadOnlyTargetRules Target)

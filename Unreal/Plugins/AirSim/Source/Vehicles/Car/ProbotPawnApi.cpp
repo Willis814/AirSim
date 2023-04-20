@@ -7,7 +7,7 @@ ProbotPawnApi::ProbotPawnApi(ACarPawn* pawn, const msr::airlib::Kinematics::Stat
                              msr::airlib::CarApiBase* vehicle_api)
     : CarPawnApi(pawn, pawn_kinematics, vehicle_api)
 {
-    movement_ = pawn->GetVehicleMovement();
+    movement_ = CastChecked<UChaosWheeledVehicleMovementComponent>(pawn->GetVehicleMovement());
     pawn_ = static_cast<AProbotPawn*>(pawn);
 }
 
@@ -17,10 +17,9 @@ void ProbotPawnApi::updateMovement(const msr::airlib::CarApiBase::CarControls& c
 
     ITnVehicleMotionModel::MotionControlInput controlInput;
 
-    controlInput.validFields = static_cast<ITnVehicleMotionModel::EPossibleInputCommands>(ITnVehicleMotionModel::EPIC_STEERING | ITnVehicleMotionModel::EPIC_THROTTLE | ITnVehicleMotionModel::EPIC_BRAKING);
+    controlInput.validFields = static_cast<ITnVehicleMotionModel::EPossibleInputCommands>(ITnVehicleMotionModel::EPIC_STEERING | ITnVehicleMotionModel::EPIC_THROTTLE);
     controlInput.throttleCommand = FMath::Clamp(controls.throttle * 100, -pawn_->MaxThrottle, pawn_->MaxThrottle);
     controlInput.steeringCommand = FMath::Clamp(-controls.steering * 2 * 100, -pawn_->MaxSteering, pawn_->MaxSteering);
-    controlInput.brakingCommand = controls.brake * 100;
     pawn_->MotionModel->SetControlCommands(controlInput);
 
     /*
@@ -31,7 +30,7 @@ void ProbotPawnApi::updateMovement(const msr::airlib::CarApiBase::CarControls& c
         */
     movement_->SetThrottleInput(controlInput.throttleCommand);
     movement_->SetSteeringInput(controlInput.steeringCommand);
-    movement_->SetBrakeInput(controlInput.brakingCommand);
+    // movement_->SetBrakeInput(controls.brake);
     // movement_->SetHandbrakeInput(controls.handbrake);
     // movement_->SetUseAutoGears(!controls.is_manual_gear);
 }

@@ -1,7 +1,7 @@
 #pragma once
 
 #include "vehicles/car/api/CarApiBase.hpp"
-#include "WheeledVehicleMovementComponent4W.h"
+#include "ChaosWheeledVehicleMovementComponent.h"
 #include "physics/Kinematics.hpp"
 #include "CarPawnApi.h"
 
@@ -28,5 +28,5 @@ protected:
     AProbotPawn* pawn_;
 
 private:
-    UWheeledVehicleMovementComponent* movement_;
+    UChaosWheeledVehicleMovementComponent* movement_;
 };

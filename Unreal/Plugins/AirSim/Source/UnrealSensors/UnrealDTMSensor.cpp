@@ -72,7 +72,7 @@ void UUnrealDTMSensor::ReadDepth()
     std::unique_ptr<uint8[]> dest = nullptr;
     // Direct 3D uses additional rows in the buffer,so we need check the result
     // stride from the lock:
-    if (IsD3DPlatform(GMaxRHIShaderPlatform, false) && (dest_stride != src_stride)) {
+    if (IsD3DPlatform(GMaxRHIShaderPlatform) && (dest_stride != src_stride)) {
         const uint32 copy_row_stride = m_width * num_bytes_per_pixel;
 
         if (m_pHeightMap == nullptr) {

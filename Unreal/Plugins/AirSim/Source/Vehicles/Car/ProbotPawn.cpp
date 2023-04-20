@@ -185,7 +185,7 @@ void AProbotPawn::OnUpdate(ITnPhysicalItem** pITnPhysicalItemsArray, int numItem
             }
 
             if (eType == ITnPhysicalItem::EPIT_SPRING) {
-                ITnSpringPhysicalItem* pITnSpringPhysicalItem = dynamic_cast<ITnSpringPhysicalItem*>(pITnPhysicalItem);
+                ITnSpringPhysicalItem* pITnSpringPhysicalItem = pITnPhysicalItem->CastToSpringPhysicalItem();
                 STnVector3D Scale = pITnSpringPhysicalItem->GetScale();
                 pSaticMesh->SetWorldScale3D(FVector(Scale.y, Scale.x, Scale.z));
             }
