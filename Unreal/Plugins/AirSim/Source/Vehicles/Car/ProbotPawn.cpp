@@ -299,7 +299,7 @@ void AProbotPawn::InitModel(const STnVector3D Position, const double Yaw, const 
 
 void AProbotPawn::LoadMaterialMappingTable()
 {
-    material_mapping_table = Cast<UDataTable>(StaticLoadObject(UDataTable::StaticClass(), NULL, TEXT("DataTable'/Game/MaterialMappingTable.MaterialMappingTable'")));
+    //material_mapping_table = Cast<UDataTable>(StaticLoadObject(UDataTable::StaticClass(), NULL, TEXT("DataTable'/Game/MaterialMappingTable.MaterialMappingTable'")));
     if (!material_mapping_table) {
         UAirBlueprintLib::LogMessageString("Cannot find material mapping table. Use default.",
                                            "",
