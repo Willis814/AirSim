@@ -13,24 +13,24 @@ STRICT_MODE_ON
 #include "common/common_utils/FileSystem.hpp"
 #include <iostream>
 #include <chrono>
+#include <cstdlib>
 #include <thread>
 
-void runSingleClient(const uint16_t port, const int ordinal)
+void runSingleClient(uint16_t port, int ordinal)
 {
     using namespace msr::airlib;
-
-    constexpr char host[] = "localhost";
+    const char host[] = "localhost";
     float timeout_s = 60;
 
     try {
-        std::unique_ptr<MultirotorRpcLibClient> client(new MultirotorRpcLibClient(host, port, timeout_s));
+        MultirotorRpcLibClient* client = new MultirotorRpcLibClient(host, port, timeout_s);
         std::cout << "Confirming connections..." << std::endl;
         client->confirmConnection();
 
-        const std::string vehicle_name = "UAV_" + std::to_string(ordinal);
+        std::string vehicle_name = "UAV_" + std::to_string(ordinal);
         std::cout << "Vehicle name:" << vehicle_name << std::endl;
 
-        const Pose pose(Vector3r(0, 5.0f * static_cast<float>(ordinal + 1), 0), Quaternionr(0, 0, 0, 0));
+        Pose pose(Vector3r(0, 5.0f * (ordinal + 1), 0), Quaternionr(0, 0, 0, 0));
         client->simAddVehicle(vehicle_name, "simpleflight", pose, "");
 
         // This is a bit crude, but give it a moment to settle on the ground, else takeoff will fail
@@ -41,14 +41,14 @@ void runSingleClient(const uint16_t port, const int ordinal)
         client->armDisarm(true, vehicle_name);
 
         auto ground_pos = client->getMultirotorState(vehicle_name).getPosition();
-        const float groundZ = ground_pos.z(); // current position (NED coordinate system).
+        float groundZ = ground_pos.z(); // current position (NED coordinate system).
 
-        constexpr float takeoff_timeout = 5;
+        float takeoff_timeout = 5;
         std::cout << "Initiating takeoff for " << vehicle_name << "..." << std::endl;
         client->takeoffAsync(takeoff_timeout, vehicle_name)->waitOnLastTask();
         std::cout << "Completed takeoff for " << vehicle_name << "..." << std::endl;
 
-        constexpr float speed = 3.0f;
+        const float speed = 3.0f;
 
         // switch to explicit hover mode so that this is the fallback when
         // move* commands are finished.
@@ -61,10 +61,10 @@ void runSingleClient(const uint16_t port, const int ordinal)
         float z = position.z(); // current position (NED coordinate system).
 
         // Altitude difference between each platform, in meters
-        constexpr float altitude_delta = 1.0f;
+        const float altitude_delta = 1.0f;
 
-        z -= static_cast<float>(ordinal) * altitude_delta;
-        const float timeout = 10.0f;
+        z -= ordinal * altitude_delta;
+        float timeout = 10.0f;
         client->moveToZAsync(z, speed, timeout, YawMode(), -1.0f, 1.0f, vehicle_name)->waitOnLastTask();
 
         std::cout << "Completed move to z " << z << " for " << vehicle_name << "..." << std::endl;
@@ -73,7 +73,7 @@ void runSingleClient(const uint16_t port, const int ordinal)
         const float size = 5.0f;
         duration = size / speed;
         DrivetrainType drivetrain = DrivetrainType::ForwardOnly;
-        const YawMode yaw_mode(true, 0);
+        YawMode yaw_mode(true, 0);
 
         position = client->getMultirotorState(vehicle_name).getPosition();
         std::cout << "Position of " << port << ": " << position << std::endl;
@@ -109,16 +109,18 @@ void runSingleClient(const uint16_t port, const int ordinal)
 
         std::cout << "Done!..." << std::endl;
 
+        delete client;
+
         std::this_thread::sleep_for(std::chrono::duration<double>(50));
     }
     catch (rpc::rpc_error& e) {
-        const auto msg = e.get_error().as<std::string>();
+        std::string msg = e.get_error().as<std::string>();
         std::cout << "Exception raised by the API, something went wrong." << std::endl
                   << msg << std::endl;
     }
 }
 
-int main(const int argc, char* argv[])
+int main(int argc, char* argv[])
 {
     using namespace msr::airlib;
 
@@ -155,7 +157,7 @@ int main(const int argc, char* argv[])
         }
     }
     catch (rpc::rpc_error& e) {
-        const auto msg = e.get_error().as<std::string>();
+        std::string msg = e.get_error().as<std::string>();
         std::cout << "Exception raised by the API, something went wrong." << std::endl
                   << msg << std::endl;
     }

@@ -21,7 +21,7 @@ namespace airlib
             msr::airlib::Environment environment(initial_environment);
             environment.reset();
 
-            ImuSimple imu;
+            ImuSimple imu{ AirSimSettings::ImuSetting() };
             imu.initialize(&kinematics, &environment);
             imu.reset();
 
@@ -37,7 +37,7 @@ namespace airlib
                 output_stream << output.angular_velocity.x() << "\t" << output.angular_velocity.y() << "\t" << output.angular_velocity.z() << "\t";
                 output_stream << output.linear_acceleration.x() << "\t" << output.linear_acceleration.y() << "\t" << output.linear_acceleration.z() << "\n";
 
-                std::this_thread::sleep_for(std::chrono::duration<double>(static_cast<double>(period) - (Utils::getTimeSinceEpochSecs() - last)));
+                std::this_thread::sleep_for(std::chrono::duration<double>(period - (Utils::getTimeSinceEpochSecs() - last)));
 
                 last = Utils::getTimeSinceEpochSecs();
                 environment.update();
@@ -52,7 +52,7 @@ namespace airlib
             msr::airlib::Environment environment(initial_environment);
             environment.reset();
 
-            BarometerSimple baro;
+            BarometerSimple baro{ AirSimSettings::BarometerSetting() };
             baro.initialize(&kinematics, &environment);
             baro.reset();
 
@@ -67,7 +67,7 @@ namespace airlib
                 output_stream << Utils::getTimeSinceEpochSecs() << "\t";
                 output_stream << output.pressure << "\t" << output.altitude << std::endl;
 
-                std::this_thread::sleep_for(std::chrono::duration<double>(static_cast<double>(period) - (Utils::getTimeSinceEpochSecs() - last)));
+                std::this_thread::sleep_for(std::chrono::duration<double>(period - (Utils::getTimeSinceEpochSecs() - last)));
 
                 last = Utils::getTimeSinceEpochSecs();
                 environment.update();
@@ -82,7 +82,7 @@ namespace airlib
             msr::airlib::Environment environment(initial_environment);
             environment.reset();
 
-            BarometerSimple baro;
+            BarometerSimple baro{ AirSimSettings::BarometerSetting() };
             baro.initialize(&kinematics, &environment);
             baro.reset();
 
@@ -99,7 +99,7 @@ namespace airlib
                     output_stream << Utils::getTimeSinceEpochSecs() << "\t";
                     output_stream << output.pressure << "\t" << output.altitude << "\t" << environment.getState().geo_point.altitude << std::endl;
 
-                    std::this_thread::sleep_for(std::chrono::duration<double>(static_cast<double>(period) - (Utils::getTimeSinceEpochSecs() - last)));
+                    std::this_thread::sleep_for(std::chrono::duration<double>(period - (Utils::getTimeSinceEpochSecs() - last)));
 
                     last = Utils::getTimeSinceEpochSecs();
                     environment.update();
@@ -136,7 +136,7 @@ namespace airlib
                 msr::airlib::Environment environment(initial_environment);
                 environment.reset();
 
-                MagnetometerSimple mag;
+                MagnetometerSimple mag{ AirSimSettings::MagnetometerSetting() };
                 mag.initialize(&kinematics, &environment);
                 mag.reset();
 
@@ -147,7 +147,7 @@ namespace airlib
                     output_stream << output.magnetic_field_body.x() << "\t" << output.magnetic_field_body.y() << "\t" << output.magnetic_field_body.z();
                     output_stream << std::endl;
 
-                    std::this_thread::sleep_for(std::chrono::duration<double>(static_cast<double>(period) - (Utils::getTimeSinceEpochSecs() - last)));
+                    std::this_thread::sleep_for(std::chrono::duration<double>(period - (Utils::getTimeSinceEpochSecs() - last)));
                     last = Utils::getTimeSinceEpochSecs();
                     environment.update();
                     mag.update();
@@ -182,7 +182,7 @@ namespace airlib
                         msr::airlib::Environment environment(initial_environment);
                         environment.reset();
 
-                        MagnetometerSimple mag;
+                        MagnetometerSimple mag{ AirSimSettings::MagnetometerSetting() };
                         mag.initialize(&kinematics, &environment);
                         mag.reset();
 
@@ -196,7 +196,7 @@ namespace airlib
                             output_stream << "\t" << kinematics.pose.orientation.w() << "\t" << kinematics.pose.orientation.x() << "\t" << kinematics.pose.orientation.y() << "\t" << kinematics.pose.orientation.z();
                             output_stream << std::endl;
 
-                            std::this_thread::sleep_for(std::chrono::duration<double>(static_cast<double>(period) - (Utils::getTimeSinceEpochSecs() - last)));
+                            std::this_thread::sleep_for(std::chrono::duration<double>(period - (Utils::getTimeSinceEpochSecs() - last)));
                             last = Utils::getTimeSinceEpochSecs();
                             environment.update();
                             mag.update();
@@ -218,7 +218,7 @@ namespace airlib
             msr::airlib::Environment environment(initial_environment);
             environment.reset();
 
-            MagnetometerSimple mag;
+            MagnetometerSimple mag{ AirSimSettings::MagnetometerSetting() };
             mag.initialize(&kinematics, &environment);
             mag.reset();
 

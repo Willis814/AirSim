@@ -34,7 +34,8 @@ public:
     MultirotorPawnSimApi(const Params& params);
     virtual void updateRenderedState(float dt) override;
     virtual void updateRendering(float dt) override;
-
+    // Willis modefied
+    virtual std::string getRecordFileLine(bool is_header_line) const override;
     //PhysicsBody interface
     //this just wrapped around MultiRotor physics body
     virtual void resetImplementation() override;

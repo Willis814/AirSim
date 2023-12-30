@@ -12,6 +12,7 @@ STRICT_MODE_ON
 #include "vehicles/car/api/CarRpcLibClient.hpp"
 #include "common/common_utils/FileSystem.hpp"
 #include <iostream>
+#include <chrono>
 
 int main()
 {
@@ -33,11 +34,11 @@ int main()
 
         std::cout << "Press Enter to get FPV image" << std::endl;
         std::cin.get();
-        const std::vector<ImageRequest> request{ ImageRequest("0", ImageType::Scene), ImageRequest("1", ImageType::DepthPlanar, true) };
-        const std::vector<ImageResponse>& response = client.simGetImages(request);
+        vector<ImageRequest> request = { ImageRequest("0", ImageType::Scene), ImageRequest("1", ImageType::DepthPlanar, true) };
+        const vector<ImageResponse>& response = client.simGetImages(request);
         std::cout << "# of images received: " << response.size() << std::endl;
 
-        if (!response.size()) {
+        if (response.size() > 0) {
             std::cout << "Enter path with ending separator to save images (leave empty for no save)" << std::endl;
             std::string path;
             std::getline(std::cin, path);
@@ -89,7 +90,7 @@ int main()
         client.setCarControls(CarApiBase::CarControls());
     }
     catch (rpc::rpc_error& e) {
-        const auto msg = e.get_error().as<std::string>();
+        std::string msg = e.get_error().as<std::string>();
         std::cout << "Exception raised by the API, something went wrong." << std::endl
                   << msg << std::endl;
         std::cin.get();

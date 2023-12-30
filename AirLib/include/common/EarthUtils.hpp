@@ -46,10 +46,10 @@ namespace airlib
         static real_T getMagDeclination(real_T latitude, real_T longitude)
         {
             /*
-            * If the values exceed valid ranges, return zero as default
-            * as we have no way of knowing what the closest real value
-            * would be.
-            */
+        * If the values exceed valid ranges, return zero as default
+        * as we have no way of knowing what the closest real value
+        * would be.
+        */
             if (latitude < -90.0f || latitude > 90.0f ||
                 longitude < -180.0f || longitude > 180.0f) {
                 throw std::out_of_range(Utils::stringf("invalid latitude (%f) or longitude (%f) value", latitude, longitude));
@@ -60,8 +60,8 @@ namespace airlib
             int min_lon = static_cast<int>(longitude / MAG_SAMPLING_RES) * MAG_SAMPLING_RES;
 
             /* for the rare case of hitting the bounds exactly
-            * the rounding logic wouldn't fit, so enforce it.
-            */
+        * the rounding logic wouldn't fit, so enforce it.
+        */
 
             /* limit to table bounds - required for maxima even when table spans full globe range */
             if (latitude <= MAG_SAMPLING_MIN_LAT) {
@@ -210,34 +210,34 @@ namespace airlib
         static Vector3r getMagField(const GeoPoint& geo_point, double& declination, double& inclination) //return Tesla
         {
             /*
-            We calculate magnetic field using simple dipol model of Earth, i.e., assume
-            earth as perfect dipole sphere and ignoring all but first order terms.
-            This obviously is inaccurate because of huge amount of irregularities, magnetic pole that is
-            constantly moving, shape of Earth, higher order terms, dipole that is not perfectly aligned etc.
-            For simulation we are not looking for actual values of magnetic field but rather if field changes
-            correctly as vehicle moves in any direction and if field component signs are correct. For this purpose, simple
-            diapole model is good enough. Keep in mind that actual field values may differ by as much as 10X in either direction
-            although for many tests differences seems to be within 3X or sometime even to first decimal digit. Again what matters is
-            how field changes wrt to movement as opposed to actual field values. To get better field strength one should use latest
-            World Magnetic Model like WMM2015 from NOAA. However these recent model is fairly complex and very expensive to calculate.
-            Other possibilities:
-                - WMM2010 mocel, expensive to compute: http://williams.best.vwh.net/magvar/magfield.c
-                - Android's mag field calculation (still uses WMM2010 and fails at North Pole): https://goo.gl/1CZB9x
+        We calculate magnetic field using simple dipol model of Earth, i.e., assume
+        earth as perfect dipole sphere and ignoring all but first order terms.
+        This obviously is inaccurate because of huge amount of irregularities, magnetic pole that is
+        constantly moving, shape of Earth, higher order terms, dipole that is not perfectly aligned etc.
+        For simulation we are not looking for actual values of magnetic field but rather if field changes
+        correctly as vehicle moves in any direction and if field component signs are correct. For this purpose, simple
+        diapole model is good enough. Keep in mind that actual field values may differ by as much as 10X in either direction
+        although for many tests differences seems to be within 3X or sometime even to first decimal digit. Again what matters is
+        how field changes wrt to movement as opposed to actual field values. To get better field strength one should use latest 
+        World Magnetic Model like WMM2015 from NOAA. However these recent model is fairly complex and very expensive to calculate. 
+        Other possibilities: 
+            - WMM2010 mocel, expensive to compute: http://williams.best.vwh.net/magvar/magfield.c
+            - Android's mag field calculation (still uses WMM2010 and fails at North Pole): https://goo.gl/1CZB9x
 
-            Performance:
-                This function takes about 1 microsecond on Lenovo P50 laptop (Intel Xeon E3-1505M v5 CPU)
-                Basic trignometry functions runs at 30ns.
+        Performance:
+            This function takes about 1 microsecond on Lenovo P50 laptop (Intel Xeon E3-1505M v5 CPU)
+            Basic trignometry functions runs at 30ns.
 
-            Accuracy:
-                Two points separated by sqrt(2 km)
-                Dipole Model:   2.50394e-05     3.40771e-06     3.6567e-05  (dec: 7.7500, inc: 55.3530)
-                WMM2015 Model:  1.8350e-05		5.201e-06		5.0158e-05  (dec: 15.8248, inc: 69.1805)
-                geo:            47.637  -122.147    622
+        Accuracy:
+            Two points separated by sqrt(2 km)
+            Dipole Model:   2.50394e-05     3.40771e-06     3.6567e-05  (dec: 7.7500, inc: 55.3530)
+            WMM2015 Model:  1.8350e-05		5.201e-06		5.0158e-05  (dec: 15.8248, inc: 69.1805)
+            geo:            47.637  -122.147    622
 
-                Dipole Model:   2.5047e-05      3.41024e-06     3.65953e-05 (dec: 7.7536, inc: 55.36532)
-                WMM2015 Model:  1.8353e-05		5.203e-06		5.0191e-05  (dec: 15.8278, inc: 69.1897)
-                geo:            47.646  -122.134    -378
-            */
+            Dipole Model:   2.5047e-05      3.41024e-06     3.65953e-05 (dec: 7.7536, inc: 55.36532)
+            WMM2015 Model:  1.8353e-05		5.203e-06		5.0191e-05  (dec: 15.8278, inc: 69.1897)
+            geo:            47.646  -122.134    -378
+        */
 
             //ref: The Earth's Magnetism: An Introduction for Geologists, Roberto Lanza, Antonio Meloni
             //Sec 1.2.5, pg 27-30 https://goo.gl/bRm7wt
@@ -290,8 +290,8 @@ namespace airlib
 
         static GeoPoint nedToGeodetic(const Vector3r& v, const HomeGeoPoint& home_geo_point)
         {
-            double x_rad = -v.y() / EARTH_RADIUS;
-            double y_rad = v.x() / EARTH_RADIUS;
+            double x_rad = v.x() / EARTH_RADIUS;
+            double y_rad = v.y() / EARTH_RADIUS;
             double c = sqrt(x_rad * x_rad + y_rad * y_rad);
             double sin_c = sin(c), cos_c = cos(c);
             double lat_rad, lon_rad;
@@ -339,7 +339,7 @@ namespace airlib
             ecef_to_ned_matrix_(2, 1) = static_cast<float>(cos(lat_rad) * sin(lon_rad));
             ecef_to_ned_matrix_(2, 2) = static_cast<float>(sin(lat_rad));
             ret = ecef_to_ned_matrix_ * vect;
-            return Vector3r(-ret(1), ret(0), -ret(2));
+            return Vector3r(ret(0), ret(1), -ret(2));
         }
 
         static Vector3r GeodeticToNed(const GeoPoint& geo, const GeoPoint& geohome)

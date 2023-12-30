@@ -1,8 +1,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "ChaosWheeledVehicleMovementComponent.h"
-#include "WheeledVehiclePawn.h"
+#include "WheeledVehicle.h"
 #include "Components/SkeletalMeshComponent.h"
 #include "PhysicalMaterials/PhysicalMaterial.h"
 #include "UObject/ConstructorHelpers.h"
@@ -27,7 +26,7 @@ class UInputComponent;
 class UAudioComponent;
 
 UCLASS(config = Game)
-class ACarPawn : public AWheeledVehiclePawn
+class ACarPawn : public AWheeledVehicle
 {
     GENERATED_BODY()
 
@@ -47,14 +46,14 @@ public:
     {
         return &pawn_events_;
     }
-    UChaosVehicleMovementComponent* getVehicleMovementComponent() const;
+    UWheeledVehicleMovementComponent* getVehicleMovementComponent() const;
     const msr::airlib::CarApiBase::CarControls& getKeyBoardControls() const
     {
         return keyboard_controls_;
     }
 
-protected:
-    virtual void updateHUDStrings();
+private:
+    void updateHUDStrings();
     void setupVehicleMovementComponent();
     void updateInCarHUD();
     void updatePhysicsMaterial();
@@ -68,17 +67,12 @@ protected:
     void onReversePressed();
     void onReverseReleased();
 
-protected:
-    PawnEvents pawn_events_;
-    FText last_speed_;
-    FText last_gear_;
-
 private:
     typedef msr::airlib::AirSimSettings AirSimSettings;
 
     UClass* pip_camera_class_;
 
-    //PawnEvents pawn_events_;
+    PawnEvents pawn_events_;
 
     bool is_low_friction_;
     UPhysicalMaterial* slippery_mat_;
@@ -112,6 +106,8 @@ private:
 
     msr::airlib::CarApiBase::CarControls keyboard_controls_;
 
+    FText last_speed_;
+    FText last_gear_;
     FColor last_gear_display_color_;
     FColor last_gear_display_reverse_color_;
 };

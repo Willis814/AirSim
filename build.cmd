@@ -10,14 +10,14 @@ set "buildMode="
 REM //check VS version
 if "%VisualStudioVersion%" == "" (
     echo(
-    echo oh oh... You need to run this command from x64 Native Tools Command Prompt for VS 2022.
+    echo oh oh... You need to run this command from x64 Native Tools Command Prompt for VS 2019.
     goto :buildfailed_nomsg
 )
-if "%VisualStudioVersion%" lss "17.0" (
+if "%VisualStudioVersion%" lss "16.0" (
     echo(
-    echo Hello there! We just upgraded AirSim to Unreal Engine 4.27 and Visual Studio 2022.
+    echo Hello there! We just upgraded AirSim to Unreal Engine 4.24 and Visual Studio 2019.
     echo Here are few easy steps for upgrade so everything is new and shiny:
-    echo https://github.com/Microsoft/AirSim/blob/main/docs/unreal_upgrade.md
+    echo https://github.com/Microsoft/AirSim/blob/master/docs/unreal_upgrade.md
     goto :buildfailed_nomsg
 )
 
@@ -99,7 +99,7 @@ REM //---------- Build rpclib ------------
 ECHO Starting cmake to build rpclib...
 IF NOT EXIST external\rpclib\%RPC_VERSION_FOLDER%\build mkdir external\rpclib\%RPC_VERSION_FOLDER%\build
 cd external\rpclib\%RPC_VERSION_FOLDER%\build
-cmake -G"Visual Studio 17 2022" ..
+cmake -G"Visual Studio 16 2019" ..
 
 if "%buildMode%" == "" (
 cmake --build . 
@@ -144,9 +144,9 @@ IF NOT EXIST Unreal\Plugins\AirSim\Content\VehicleAdv\SUV\v1.2.0 (
         REM %powershell% -command "& { Start-BitsTransfer -Source https://github.com/Microsoft/AirSim/releases/download/v1.2.0/car_assets.zip -Destination suv_download_tmp\car_assets.zip }"
         REM %powershell% -command "& { (New-Object System.Net.WebClient).DownloadFile('https://github.com/Microsoft/AirSim/releases/download/v1.2.0/car_assets.zip', 'suv_download_tmp\car_assets.zip') }"
         if "%PWSHV7%" == "" (
-            %powershell% -command "& { [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; iwr https://github.com/CodexLabsLLC/Colosseum/releases/download/v2.0.0-beta.0/car_assets.zip -OutFile suv_download_tmp\car_assets.zip }"
+            %powershell% -command "& { [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; iwr https://github.com/Microsoft/AirSim/releases/download/v1.2.0/car_assets.zip -OutFile suv_download_tmp\car_assets.zip }"
         ) else (
-            %powershell% -command "iwr https://github.com/CodexLabsLLC/Colosseum/releases/download/v2.0.0-beta.0/car_assets.zip -OutFile suv_download_tmp\car_assets.zip"
+            %powershell% -command "iwr https://github.com/Microsoft/AirSim/releases/download/v1.2.0/car_assets.zip -OutFile suv_download_tmp\car_assets.zip"
         )
         @echo off
         rmdir /S /Q Unreal\Plugins\AirSim\Content\VehicleAdv\SUV
@@ -203,13 +203,6 @@ REM //---------- all our output goes to Unreal/Plugin folder ----------
 if NOT exist Unreal\Plugins\AirSim\Source\AirLib mkdir Unreal\Plugins\AirSim\Source\AirLib
 robocopy /MIR AirLib Unreal\Plugins\AirSim\Source\AirLib  /XD temp *. /njh /njs /ndl /np
 copy /y AirSim.props Unreal\Plugins\AirSim\Source\AirLib
-
-REM //---------- update all environments ----------
-FOR /D %%E IN (Unreal\Environments\*) DO (
-    cd %%E
-    call .\update_from_git.bat ..\..\..
-    cd ..\..\..
-)
 
 REM //---------- done building ----------
 exit /b 0

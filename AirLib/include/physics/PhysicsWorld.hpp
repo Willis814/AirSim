@@ -54,6 +54,13 @@ namespace airlib
             unlock();
         }
 
+         void removeBody(UpdatableObject* body)
+        {
+            lock();
+            world_.erase_remove(body);
+            unlock();
+        }
+
         uint64_t getUpdatePeriodNanos() const
         {
             return update_period_nanos_;

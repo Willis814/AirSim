@@ -72,6 +72,12 @@ namespace airlib
             vehicle_sim_apis_.insert_or_assign("", vehicle_sim_apis_.at(vehicle_name));
         }
 
+        //willis modefied
+        void removeVehicleSimApi(const std::string& vehicle_name)
+        {
+            vehicle_sim_apis_.erase(vehicle_name);
+        }
+
     private:
         WorldSimApiBase* world_sim_api_;
 

@@ -10,8 +10,12 @@ import time
 import math
 import logging
 
+RPCLIB_PORT_CV = 41451
+RPCLIB_PORT_CAR = 41461
+RPCLIB_PORT_MULTIROTOR = 41471
+
 class VehicleClient:
-    def __init__(self, ip = "", port = 41451, timeout_value = 3600):
+    def __init__(self, ip = "", port = RPCLIB_PORT_CV, timeout_value = 3600):
         if (ip == ""):
             ip = "127.0.0.1"
         self.client = msgpackrpc.Client(msgpackrpc.Address(ip, port), timeout = timeout_value, pack_encoding = 'utf-8', unpack_encoding = 'utf-8')
@@ -190,33 +194,31 @@ class VehicleClient:
         """
         return self.client.call("simSwapTextures", tags, tex_id, component_id, material_id)
 
-    def simSetObjectMaterial(self, object_name, material_name, component_id = 0):
+    def simSetObjectMaterial(self, object_name, material_name):
         """
         Runtime Swap Texture API
         See https://microsoft.github.io/AirSim/retexturing/ for details
         Args:
             object_name (str): name of object to set material for
             material_name (str): name of material to set for object
-            component_id (int, optional) : index of material elements
 
         Returns:
             bool: True if material was set
         """
-        return self.client.call("simSetObjectMaterial", object_name, material_name, component_id)
+        return self.client.call("simSetObjectMaterial", object_name, material_name)
 
-    def simSetObjectMaterialFromTexture(self, object_name, texture_path, component_id = 0):
+    def simSetObjectMaterialFromTexture(self, object_name, texture_path):
         """
         Runtime Swap Texture API
         See https://microsoft.github.io/AirSim/retexturing/ for details
         Args:
             object_name (str): name of object to set material for
             texture_path (str): path to texture to set for object
-            component_id (int, optional) : index of material elements
 
         Returns:
             bool: True if material was set
         """
-        return self.client.call("simSetObjectMaterialFromTexture", object_name, texture_path, component_id)
+        return self.client.call("simSetObjectMaterialFromTexture", object_name, texture_path)
 
 
     # time-of-day control
@@ -1079,6 +1081,10 @@ class VehicleClient:
         """
         return self.client.call('simCreateVoxelGrid', position, x, y, z, res, of)
 
+
+    def simDestroyVehicle(self, vehicle_name):
+        return self.client.call('simDestroyVehicle', vehicle_name)
+    
 #Add new vehicle via RPC
     def simAddVehicle(self, vehicle_name, vehicle_type, pose, pawn_path = ""):
         """
@@ -1113,19 +1119,9 @@ class VehicleClient:
         """
         return self.client.call('getSettingsString')
 
-    def simSetExtForce(self, ext_force):
-        """
-        Set arbitrary external forces, in World frame, NED direction. Can be used
-        for implementing simple payloads.
-
-        Args:
-            ext_force (Vector3r): Force, in World frame, NED direction, in N
-        """
-        self.client.call('simSetExtForce', ext_force)
-
-# -----------------------------------  Multirotor APIs ---------------------------------------------
+#----------------------------------- Multirotor APIs ---------------------------------------------
 class MultirotorClient(VehicleClient, object):
-    def __init__(self, ip = "", port = 41451, timeout_value = 3600):
+    def __init__(self, ip = "", port = RPCLIB_PORT_MULTIROTOR, timeout_value = 3600):
         super(MultirotorClient, self).__init__(ip, port, timeout_value)
 
     def takeoffAsync(self, timeout_sec = 20, vehicle_name = ''):
@@ -1593,7 +1589,7 @@ class MultirotorClient(VehicleClient, object):
 
 #----------------------------------- Car APIs ---------------------------------------------
 class CarClient(VehicleClient, object):
-    def __init__(self, ip = "", port = 41451, timeout_value = 3600):
+    def __init__(self, ip = "", port = RPCLIB_PORT_CAR, timeout_value = 3600):
         super(CarClient, self).__init__(ip, port, timeout_value)
 
     def setCarControls(self, controls, vehicle_name = ''):

@@ -6,13 +6,7 @@ SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 pushd "$SCRIPT_DIR" >/dev/null
 
 downloadHighPolySuv=true
-
 MIN_CMAKE_VERSION=3.10.0
-# On macOS, make sure we have a CMake that will support CMAKE_APPLE_SILICON_PROCESSOR.
-if [ "$(uname)" == "Darwin" ]; then
-    MIN_CMAKE_VERSION=3.19.2
-fi
-
 DEBUG="${DEBUG:-false}"
 function version_less_than_equal_to() { test "$(printf '%s\n' "$@" | sort -V | head -n 1)" = "$1"; }
 
@@ -78,10 +72,6 @@ if [ "$(uname)" == "Darwin" ]; then # osx
         sudo dseditgroup -o edit -a "$(whoami)" -t user dialout
     fi
 
-    # MacOS 11 has new Python env management that breaks the Python 2-to-3
-    # build process. We need to make sure brew updates before attempting to
-    # install, since it will update packaages
-    brew update
     brew_install wget
     brew_install coreutils
 
@@ -170,7 +160,7 @@ if $downloadHighPolySuv; then
             fi
             mkdir -p "suv_download_tmp"
             cd suv_download_tmp
-            wget  https://github.com/CodexLabsLLC/Colosseum/releases/download/v2.0.0-beta.0/car_assets.zip
+            wget  https://github.com/Microsoft/AirSim/releases/download/v1.2.0/car_assets.zip
             if [ -d "../Unreal/Plugins/AirSim/Content/VehicleAdv/SUV" ]; then
                 rm -rf "../Unreal/Plugins/AirSim/Content/VehicleAdv/SUV"
             fi

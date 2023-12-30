@@ -63,7 +63,16 @@ STRICT_MODE_OFF //todo what does this do?
 #include <unordered_map>
 #include <memory>
 
-    struct SimpleMatrix
+    // todo move airlib typedefs to separate header file?
+    typedef msr::airlib::ImageCaptureBase::ImageRequest ImageRequest;
+typedef msr::airlib::ImageCaptureBase::ImageResponse ImageResponse;
+typedef msr::airlib::ImageCaptureBase::ImageType ImageType;
+typedef msr::airlib::AirSimSettings::CaptureSetting CaptureSetting;
+typedef msr::airlib::AirSimSettings::VehicleSetting VehicleSetting;
+typedef msr::airlib::AirSimSettings::CameraSetting CameraSetting;
+typedef msr::airlib::AirSimSettings::LidarSetting LidarSetting;
+
+struct SimpleMatrix
 {
     int rows;
     int cols;
@@ -95,30 +104,14 @@ struct GimbalCmd
 template <typename T>
 struct SensorPublisher
 {
-    msr::airlib::SensorBase::SensorType sensor_type;
+    SensorBase::SensorType sensor_type;
     std::string sensor_name;
     typename rclcpp::Publisher<T>::SharedPtr publisher;
 };
 
 class AirsimROSWrapper
 {
-    using AirSimSettings = msr::airlib::AirSimSettings;
-    using SensorBase = msr::airlib::SensorBase;
-    using CameraSetting = msr::airlib::AirSimSettings::CameraSetting;
-    using CaptureSetting = msr::airlib::AirSimSettings::CaptureSetting;
-    using LidarSetting = msr::airlib::AirSimSettings::LidarSetting;
-    using VehicleSetting = msr::airlib::AirSimSettings::VehicleSetting;
-    using ImageRequest = msr::airlib::ImageCaptureBase::ImageRequest;
-    using ImageResponse = msr::airlib::ImageCaptureBase::ImageResponse;
-    using ImageType = msr::airlib::ImageCaptureBase::ImageType;
-
 public:
-    enum class AIRSIM_MODE : unsigned
-    {
-        DRONE,
-        CAR
-    };
-
     AirsimROSWrapper(const std::shared_ptr<rclcpp::Node> nh, const std::shared_ptr<rclcpp::Node> nh_img, const std::shared_ptr<rclcpp::Node> nh_lidar, const std::string& host_ip);
     ~AirsimROSWrapper(){};
 
@@ -159,6 +152,8 @@ private:
         rclcpp::Time stamp_;
 
         std::string odom_frame_id_;
+
+        std::string vehicle_type_;
     };
 
     class CarROS : public VehicleROS
@@ -189,6 +184,8 @@ private:
         bool has_vel_cmd_;
         VelCmd vel_cmd_;
     };
+
+    const msr::airlib::AirSimSettings& get_settings() const;
 
     /// ROS timer callbacks
     void img_response_timer_cb(); // update images from airsim_client_ every nth sec
@@ -233,6 +230,7 @@ private:
 
     /// camera helper methods
     sensor_msgs::msg::CameraInfo generate_cam_info(const std::string& camera_name, const CameraSetting& camera_setting, const CaptureSetting& capture_setting) const;
+    cv::Mat manual_decode_depth(const ImageResponse& img_response) const;
 
     std::shared_ptr<sensor_msgs::msg::Image> get_img_msg_from_response(const ImageResponse& img_response, const rclcpp::Time curr_ros_time, const std::string frame_id);
     std::shared_ptr<sensor_msgs::msg::Image> get_depth_img_msg_from_response(const ImageResponse& img_response, const rclcpp::Time curr_ros_time, const std::string frame_id);
@@ -248,7 +246,6 @@ private:
     void set_nans_to_zeros_in_pose(VehicleSetting& vehicle_setting) const;
     void set_nans_to_zeros_in_pose(const VehicleSetting& vehicle_setting, CameraSetting& camera_setting) const;
     void set_nans_to_zeros_in_pose(const VehicleSetting& vehicle_setting, LidarSetting& lidar_setting) const;
-    geometry_msgs::msg::Transform get_camera_optical_tf_from_body_tf(const geometry_msgs::msg::Transform& body_tf) const;
 
     /// utils. todo parse into an Airlib<->ROS conversion class
     tf2::Quaternion get_tf2_quat(const msr::airlib::Quaternionr& airlib_quat) const;
@@ -264,7 +261,7 @@ private:
     sensor_msgs::msg::Imu get_imu_msg_from_airsim(const msr::airlib::ImuBase::Output& imu_data) const;
     airsim_interfaces::msg::Altimeter get_altimeter_msg_from_airsim(const msr::airlib::BarometerBase::Output& alt_data) const;
     sensor_msgs::msg::Range get_range_from_airsim(const msr::airlib::DistanceSensorData& dist_data) const;
-    sensor_msgs::msg::PointCloud2 get_lidar_msg_from_airsim(const msr::airlib::LidarData& lidar_data, const std::string& vehicle_name, const std::string& sensor_name) const;
+    sensor_msgs::msg::PointCloud2 get_lidar_msg_from_airsim(const msr::airlib::LidarData& lidar_data, const std::string& vehicle_name) const;
     sensor_msgs::msg::NavSatFix get_gps_msg_from_airsim(const msr::airlib::GpsBase::Output& gps_data) const;
     sensor_msgs::msg::MagneticField get_mag_msg_from_airsim(const msr::airlib::MagnetometerBase::Output& mag_data) const;
     airsim_interfaces::msg::Environment get_environment_msg_from_airsim(const msr::airlib::Environment::State& env_data) const;
@@ -278,9 +275,16 @@ private:
     void read_params_from_yaml_and_fill_cam_info_msg(const std::string& file_name, sensor_msgs::msg::CameraInfo& cam_info) const;
     void convert_yaml_to_simple_mat(const YAML::Node& node, SimpleMatrix& m) const; // todo ugly
 
+    // simulation time utility
+    rclcpp::Time airsim_timestamp_to_ros(const msr::airlib::TTimePoint& stamp) const;
+    rclcpp::Time chrono_timestamp_to_ros(const std::chrono::system_clock::time_point& stamp) const;
+
     template <typename T>
-    const SensorPublisher<T> create_sensor_publisher(const std::string& sensor_type_name, const std::string& sensor_name,
-                                                     SensorBase::SensorType sensor_type, const std::string& topic_name, int QoS);
+    const SensorPublisher<T> create_sensor_publisher(const string& sensor_type_name, const string& sensor_name, SensorBase::SensorType sensor_type, const string& topic_name, int QoS);
+
+    msr::airlib::RpcLibClientBase* get_client(const std::string& vehicle_type);
+    msr::airlib::MultirotorRpcLibClient* get_multirotor_client();
+    msr::airlib::CarRpcLibClient* get_car_client();
 
 private:
     // subscriber / services for ALL robots
@@ -294,9 +298,6 @@ private:
     rclcpp::Subscription<airsim_interfaces::msg::VelCmdGroup>::SharedPtr vel_cmd_group_world_frame_sub_;
     rclcpp::Service<airsim_interfaces::srv::TakeoffGroup>::SharedPtr takeoff_group_srvr_;
     rclcpp::Service<airsim_interfaces::srv::LandGroup>::SharedPtr land_group_srvr_;
-
-    AIRSIM_MODE airsim_mode_ = AIRSIM_MODE::DRONE;
-
     rclcpp::Service<airsim_interfaces::srv::Reset>::SharedPtr reset_srvr_;
     rclcpp::Publisher<airsim_interfaces::msg::GPSYaw>::SharedPtr origin_geo_point_pub_; // home geo coord of drones
     msr::airlib::GeoPoint origin_geo_point_; // gps coord of unreal origin
@@ -309,7 +310,8 @@ private:
     bool is_vulkan_; // rosparam obtained from launch file. If vulkan is being used, we BGR encoding instead of RGB
 
     std::string host_ip_;
-    std::unique_ptr<msr::airlib::RpcLibClientBase> airsim_client_;
+    std::unique_ptr<msr::airlib::MultirotorRpcLibClient> airsim_multirotor_client_;
+    std::unique_ptr<msr::airlib::CarRpcLibClient> airsim_car_client_;
     // seperate busy connections to airsim, update in their own thread
     msr::airlib::RpcLibClientBase airsim_client_images_;
     msr::airlib::RpcLibClientBase airsim_client_lidar_;

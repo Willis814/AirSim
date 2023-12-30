@@ -1,5 +1,4 @@
 #include "SimModeBase.h"
-#include "Recording/RecordingThread.h"
 #include "Misc/MessageDialog.h"
 #include "Misc/EngineVersion.h"
 #include "Runtime/Launch/Resources/Version.h"
@@ -27,17 +26,10 @@
 //it to AirLib and directly implement WorldSimApiBase interface
 #include "WorldSimApi.h"
 
-ASimModeBase* ASimModeBase::SIMMODE = nullptr;
-
-ASimModeBase* ASimModeBase::getSimMode()
-{
-    return SIMMODE;
-}
+bool ASimModeBase::is_first_ = true;
 
 ASimModeBase::ASimModeBase()
 {
-    SIMMODE = this;
-
     static ConstructorHelpers::FClassFinder<APIPCamera> external_camera_class(TEXT("Blueprint'/AirSim/Blueprints/BP_PIPCamera'"));
     external_camera_class_ = external_camera_class.Succeeded() ? external_camera_class.Class : nullptr;
     static ConstructorHelpers::FClassFinder<ACameraDirector> camera_director_class(TEXT("Blueprint'/AirSim/Blueprints/BP_CameraDirector'"));
@@ -68,6 +60,8 @@ ASimModeBase::ASimModeBase()
     if (domain_rand_mat_finder.Succeeded()) {
         domain_rand_material_ = domain_rand_mat_finder.Object;
     }
+
+    recording_thread_.reset(new FRecordingThread());
 }
 
 void ASimModeBase::toggleLoadingScreen(bool is_visible)
@@ -108,13 +102,18 @@ void ASimModeBase::BeginPlay()
         APlayerController* player_controller = this->GetWorld()->GetFirstPlayerController();
         fpv_pawn = player_controller->GetViewTarget();
     }
-    player_start_transform = fpv_pawn->GetActorTransform();
-    player_loc = player_start_transform.GetLocation();
-    // Move the world origin to the player's location (this moves the coordinate system and adds
-    // a corresponding offset to all positions to compensate for the shift)
-    this->GetWorld()->SetNewWorldOrigin(FIntVector(player_loc) + this->GetWorld()->OriginLocation);
-    // Regrab the player's position after the offset has been added (which should be 0,0,0 now)
-    player_start_transform = fpv_pawn->GetActorTransform();
+
+    // We shouldn't call SetNewWorldOrigin() more than once
+    if (is_first_) {
+        player_start_transform = fpv_pawn->GetActorTransform();
+        player_loc = player_start_transform.GetLocation();
+        // Move the world origin to the player's location (this moves the coordinate system and adds
+        // a corresponding offset to all positions to compensate for the shift)
+        this->GetWorld()->SetNewWorldOrigin(FIntVector(player_loc) + this->GetWorld()->OriginLocation);
+        // Regrab the player's position after the offset has been added (which should be 0,0,0 now)
+        player_start_transform = fpv_pawn->GetActorTransform();
+        is_first_ = false;
+    }
     global_ned_transform_.reset(new NedTransform(player_start_transform,
                                                  UAirBlueprintLib::GetWorldToMetersScale(this)));
 
@@ -141,7 +140,7 @@ void ASimModeBase::BeginPlay()
     UAirBlueprintLib::LogMessage(TEXT("Press F1 to see help"), TEXT(""), LogDebugLevel::Informational);
 
     setupVehiclesAndCamera();
-    FRecordingThread::init();
+    recording_thread_->init();
 
     if (getSettings().recording_setting.enabled)
         startRecording();
@@ -191,8 +190,8 @@ void ASimModeBase::setStencilIDs()
 
 void ASimModeBase::EndPlay(const EEndPlayReason::Type EndPlayReason)
 {
-    FRecordingThread::stopRecording();
-    FRecordingThread::killRecording();
+    recording_thread_->stopRecording();
+    recording_thread_->killRecording();
     world_sim_api_.reset();
     api_provider_.reset();
     api_server_.reset();
@@ -204,6 +203,8 @@ void ASimModeBase::EndPlay(const EEndPlayReason::Type EndPlayReason)
 
     spawned_actors_.Empty();
     vehicle_sim_apis_.clear();
+
+    is_first_ = true;
 
     Super::EndPlay(EndPlayReason);
 }
@@ -229,7 +230,7 @@ void ASimModeBase::initializeTimeOfDay()
 #if ENGINE_MINOR_VERSION > 24
         FObjectProperty* sun_prop = CastFieldChecked<FObjectProperty>(p);
 #else
-        FObjectProperty* sun_prop = Cast<FObjectProperty>(p);
+        UObjectProperty* sun_prop = Cast<UObjectProperty>(p);
 #endif
 
         UObject* sun_obj = sun_prop->GetObjectPropertyValue_InContainer(sky_sphere_);
@@ -310,13 +311,6 @@ void ASimModeBase::setWind(const msr::airlib::Vector3r& wind) const
     // should be overridden by derived class
     unused(wind);
     throw std::domain_error("setWind not implemented by SimMode");
-}
-
-void ASimModeBase::setExtForce(const msr::airlib::Vector3r& ext_force) const
-{
-    // should be overridden by derived class
-    unused(ext_force);
-    throw std::domain_error("setExtForce not implemented by SimMode");
 }
 
 std::unique_ptr<msr::airlib::ApiServerBase> ASimModeBase::createApiServer() const
@@ -507,17 +501,17 @@ bool ASimModeBase::toggleRecording()
 
 void ASimModeBase::stopRecording()
 {
-    FRecordingThread::stopRecording();
+    recording_thread_->stopRecording();
 }
 
 void ASimModeBase::startRecording()
 {
-    FRecordingThread::startRecording(getSettings().recording_setting, getApiProvider()->getVehicleSimApis());
+    recording_thread_->startRecording(getSettings().recording_setting, getApiProvider()->getVehicleSimApis());
 }
 
 bool ASimModeBase::isRecording() const
 {
-    return FRecordingThread::isRecording();
+    return recording_thread_->isRecording();
 }
 
 void ASimModeBase::toggleTraceAll()
@@ -636,6 +630,23 @@ APawn* ASimModeBase::createVehiclePawn(const AirSimSettings::VehicleSetting& veh
     return spawned_pawn;
 }
 
+bool ASimModeBase::deleteVehiclePawn(const std::string& vehicle_name) {
+    // 将车辆名称转换为 FName 类型
+    FName vehicle_name_f = FName(vehicle_name.c_str());
+
+    // 在存储的 spawned_actors_ 中查找并销毁指定的 Pawn
+    for (auto actor : spawned_actors_) {
+        if (actor->GetFName() == vehicle_name_f) {
+            actor->Destroy();
+            spawned_actors_.Remove(actor); // 从列表中移除
+            return true; // 成功删除
+        }
+    }
+
+    // 如果没有找到指定名称的 Pawn，返回 false
+    return false;
+}
+
 std::unique_ptr<PawnSimApi> ASimModeBase::createVehicleApi(APawn* vehicle_pawn)
 {
     initializeVehiclePawn(vehicle_pawn);
@@ -682,6 +693,30 @@ bool ASimModeBase::createVehicleAtRuntime(const std::string& vehicle_name, const
     vehicle_sim_apis_.push_back(std::move(vehicle_sim_api));
 
     return true;
+}
+
+//willis modefied
+bool ASimModeBase::destroyVehicleAtRuntime(const std::string& vehicle_name)
+{
+    // 注销物理实体
+    // 销毁 Pawn
+    // 调整AirSim设置，仿佛这个车辆从一开始就没有
+    //const auto* vehicle_setting = getSettings().getVehicleSetting(vehicle_name);
+    AirSimSettings::singleton().deleteVehicleSetting(vehicle_name);
+    deleteVehiclePawn(vehicle_name);
+    for (auto it = vehicle_sim_apis_.begin(); it != vehicle_sim_apis_.end();) {
+        if ((*it)->getVehicleName() == vehicle_name) {
+            unregisterPhysicsBody(it->get());
+            it = vehicle_sim_apis_.erase(it); // 从列表中移除并获取下一个有效迭代器
+            getApiProvider()->removeVehicleSimApi(vehicle_name);
+            return true; // 返回成功销毁车辆
+        } else {
+            ++it; // 只在未删除元素时递增迭代器
+        }
+    }
+
+    // 如果没有找到车辆，返回false
+    return false;
 }
 
 void ASimModeBase::setupVehiclesAndCamera()
@@ -741,18 +776,23 @@ void ASimModeBase::setupVehiclesAndCamera()
     initializeExternalCameras();
     external_image_capture_ = std::make_unique<UnrealImageCapture>(&external_cameras_);
 
-    if (getApiProvider()->hasDefaultVehicle()) {
+    if (getApiProvider()->hasDefaultVehicle() && isVehicleTypeSupported(getSettings().getFirstVehicleSetting()->vehicle_type)) {
         //TODO: better handle no FPV vehicles scenario
         getVehicleSimApi()->possess();
         CameraDirector->initializeForBeginPlay(getInitialViewMode(), getVehicleSimApi()->getPawn(), getVehicleSimApi()->getCamera("fpv"), getVehicleSimApi()->getCamera("back_center"), nullptr);
     }
-    else
-        CameraDirector->initializeForBeginPlay(getInitialViewMode(), nullptr, nullptr, nullptr, nullptr);
+    //else
+    //    CameraDirector->initializeForBeginPlay(getInitialViewMode(), nullptr, nullptr, nullptr, nullptr);
 
     checkVehicleReady();
 }
 
 void ASimModeBase::registerPhysicsBody(msr::airlib::VehicleSimApiBase* physicsBody)
+{
+    // derived class shoudl override this method to add new vehicle to the physics engine
+}
+
+void ASimModeBase::unregisterPhysicsBody(msr::airlib::VehicleSimApiBase* physicsBody)
 {
     // derived class shoudl override this method to add new vehicle to the physics engine
 }
@@ -845,10 +885,11 @@ void ASimModeBase::drawLidarDebugPoints()
 
                         FVector uu_point;
 
-                        if (lidar->getParams().data_frame == AirSimSettings::LidarSetting::DataFrame::VehicleInertialFrame) {
+                        if (lidar->getParams().data_frame == AirSimSettings::kVehicleInertialFrame) {
                             uu_point = pawn_sim_api->getNedTransform().fromLocalNed(point);
                         }
-                        else if (lidar->getParams().data_frame == AirSimSettings::LidarSetting::DataFrame::SensorLocalFrame) {
+                        else if (lidar->getParams().data_frame == AirSimSettings::kSensorLocalFrame) {
+
                             Vector3r point_w = VectorMath::transformToWorldFrame(point, lidar_data.pose, true);
                             uu_point = pawn_sim_api->getNedTransform().fromLocalNed(point_w);
                         }

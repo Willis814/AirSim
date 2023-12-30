@@ -245,6 +245,10 @@ namespace airlib
             return getWorldSimApi()->addVehicle(vehicle_name, vehicle_type, pose.to(), pawn_path);
         });
 
+        pimpl_->server.bind("simDestroyVehicle", [&](const std::string& vehicle_name) -> bool {
+            return getWorldSimApi()->destroyVehicle(vehicle_name);
+        });
+
         pimpl_->server.bind("simSetVehiclePose", [&](const RpcLibAdaptorsBase::Pose& pose, bool ignore_collision, const std::string& vehicle_name) -> void {
             getVehicleSimApi(vehicle_name)->setPose(pose.to(), ignore_collision);
         });
@@ -278,6 +282,7 @@ namespace airlib
             const auto& response = getWorldSimApi()->getDetections(type, CameraDetails(camera_name, vehicle_name, external));
             return RpcLibAdaptorsBase::DetectionInfo::from(response);
         });
+
         pimpl_->server.bind("reset", [&]() -> void {
             //Exit if already resetting.
             static bool resetInProgress;
@@ -476,12 +481,12 @@ namespace airlib
             return *getWorldSimApi()->swapTextures(tag, tex_id, component_id, material_id);
         });
 
-        pimpl_->server.bind("simSetObjectMaterial", [&](const std::string& object_name, const std::string& material_name, const int component_id) -> bool {
-            return getWorldSimApi()->setObjectMaterial(object_name, material_name, component_id);
+        pimpl_->server.bind("simSetObjectMaterial", [&](const std::string& object_name, const std::string& material_name) -> bool {
+            return getWorldSimApi()->setObjectMaterial(object_name, material_name);
         });
 
-        pimpl_->server.bind("simSetObjectMaterialFromTexture", [&](const std::string& object_name, const std::string& texture_path, const int component_id) -> bool {
-            return getWorldSimApi()->setObjectMaterialFromTexture(object_name, texture_path, component_id);
+        pimpl_->server.bind("simSetObjectMaterialFromTexture", [&](const std::string& object_name, const std::string& texture_path) -> bool {
+            return getWorldSimApi()->setObjectMaterialFromTexture(object_name, texture_path);
         });
 
         pimpl_->server.bind("startRecording", [&]() -> void {
@@ -498,10 +503,6 @@ namespace airlib
 
         pimpl_->server.bind("simSetWind", [&](const RpcLibAdaptorsBase::Vector3r& wind) -> void {
             getWorldSimApi()->setWind(wind.to());
-        });
-
-        pimpl_->server.bind("simSetExtForce", [&](const RpcLibAdaptorsBase::Vector3r& ext_force) -> void {
-            getWorldSimApi()->setExtForce(ext_force.to());
         });
 
         pimpl_->server.bind("listVehicles", [&]() -> vector<string> {

@@ -18,7 +18,8 @@ public:
 
 public:
     UnrealLidarSensor(const AirSimSettings::LidarSetting& setting,
-                      AActor* actor, const NedTransform* ned_transform);
+                      AActor* actor, const NedTransform* ned_transform,
+                      const std::string& vehicle_type);
 
 protected:
     virtual void getPointCloud(const msr::airlib::Pose& lidar_pose, const msr::airlib::Pose& vehicle_pose,
@@ -30,8 +31,8 @@ private:
 
     void createLasers();
     bool shootLaser(const msr::airlib::Pose& lidar_pose, const msr::airlib::Pose& vehicle_pose,
-                    const float horizontal_angle, const float vertical_angle,
-                    const msr::airlib::LidarSimpleParams& params, Vector3r& point, int& segmentationID);
+                    const uint32 channel, const float horizontal_angle, const float vertical_angle,
+                    const msr::airlib::LidarSimpleParams params, Vector3r& point, int& segmentationID);
 
 private:
     AActor* actor_;

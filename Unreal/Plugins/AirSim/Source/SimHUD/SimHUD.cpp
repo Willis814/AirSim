@@ -22,18 +22,16 @@ void ASimHUD::BeginPlay()
 
     try {
         UAirBlueprintLib::OnBeginPlay();
-        initializeSettings();
         loadLevel();
 
-        // Prevent a MavLink connection being established if changing levels
-        if (map_changed_) return;
-
+        initializeSettings();
         setUnrealEngineSettings();
-        createSimMode();
+        createAllSimModes();
         createMainWidget();
         setupInputBindings();
-        if (simmode_)
-            simmode_->startApiServer();
+        for (auto simmode : simmodes_) {
+            simmode->startApiServer();
+        }
     }
     catch (std::exception& ex) {
         UAirBlueprintLib::LogMessageString("Error at startup: ", ex.what(), LogDebugLevel::Failure);
@@ -45,22 +43,26 @@ void ASimHUD::BeginPlay()
 
 void ASimHUD::Tick(float DeltaSeconds)
 {
-    if (simmode_ && simmode_->EnableReport)
-        widget_->updateDebugReport(simmode_->getDebugReport());
+    for (auto simmode : simmodes_) {
+        if (simmode && simmode->EnableReport)
+            widget_->updateDebugReport(simmode->getDebugReport());
+    }
 }
 
 void ASimHUD::EndPlay(const EEndPlayReason::Type EndPlayReason)
 {
-    if (simmode_)
-        simmode_->stopApiServer();
+    for (auto simmode : simmodes_) {
+        simmode->stopApiServer();
+    }
 
     if (widget_) {
         widget_->Destruct();
         widget_ = nullptr;
     }
-    if (simmode_) {
-        simmode_->Destroy();
-        simmode_ = nullptr;
+
+    for (auto& simmode : simmodes_) {
+        simmode->Destroy();
+        simmode = nullptr;
     }
 
     UAirBlueprintLib::OnEndPlay();
@@ -70,7 +72,11 @@ void ASimHUD::EndPlay(const EEndPlayReason::Type EndPlayReason)
 
 void ASimHUD::toggleRecordHandler()
 {
-    simmode_->toggleRecording();
+    for (auto simmode : simmodes_) {
+        if (simmode->getApiProvider()->hasDefaultVehicle()) {
+            simmode->toggleRecording();
+        }
+    }
 }
 
 void ASimHUD::inputEventToggleRecording()
@@ -80,8 +86,10 @@ void ASimHUD::inputEventToggleRecording()
 
 void ASimHUD::inputEventToggleReport()
 {
-    simmode_->EnableReport = !simmode_->EnableReport;
-    widget_->setReportVisible(simmode_->EnableReport);
+    for (auto simmode : simmodes_) {
+        simmode->EnableReport = !simmode->EnableReport;
+        widget_->setReportVisible(simmode->EnableReport);
+    }
 }
 
 void ASimHUD::inputEventToggleHelp()
@@ -91,7 +99,9 @@ void ASimHUD::inputEventToggleHelp()
 
 void ASimHUD::inputEventToggleTrace()
 {
-    simmode_->toggleTraceAll();
+    for (auto simmode : simmodes_) {
+        simmode->toggleTraceAll();
+    }
 }
 
 void ASimHUD::updateWidgetSubwindowVisibility()
@@ -147,24 +157,6 @@ void ASimHUD::inputEventToggleAll()
     updateWidgetSubwindowVisibility();
 }
 
-void ASimHUD::inputEventToggleSubwindow0Fullscreen()
-{
-    inputEventToggleSubwindow0();
-    widget_->maximizeSubWindow(0);
-}
-
-void ASimHUD::inputEventToggleSubwindow1Fullscreen()
-{
-    inputEventToggleSubwindow1();
-    widget_->maximizeSubWindow(1);
-}
-
-void ASimHUD::inputEventToggleSubwindow2Fullscreen()
-{
-    inputEventToggleSubwindow2();
-    widget_->maximizeSubWindow(2);
-}
-
 void ASimHUD::createMainWidget()
 {
     //create main widget
@@ -193,8 +185,12 @@ void ASimHUD::createMainWidget()
 
     //synchronize PIP views
     widget_->initializeForPlay();
-    if (simmode_)
-        widget_->setReportVisible(simmode_->EnableReport);
+
+    // ToDo - alon - is it right?
+    for (auto simmode : simmodes_) {
+        if (simmode)
+            widget_->setReportVisible(simmode->EnableReport);
+    }
     widget_->setOnToggleRecordingHandler(std::bind(&ASimHUD::toggleRecordHandler, this));
     widget_->setRecordButtonVisibility(AirSimSettings::singleton().is_record_ui_visible);
     updateWidgetSubwindowVisibility();
@@ -232,10 +228,6 @@ void ASimHUD::setupInputBindings()
     UAirBlueprintLib::BindActionToKey("InputEventToggleSubwindow1", EKeys::Two, this, &ASimHUD::inputEventToggleSubwindow1);
     UAirBlueprintLib::BindActionToKey("InputEventToggleSubwindow2", EKeys::Three, this, &ASimHUD::inputEventToggleSubwindow2);
     UAirBlueprintLib::BindActionToKey("InputEventToggleAll", EKeys::Zero, this, &ASimHUD::inputEventToggleAll);
-
-    UAirBlueprintLib::BindActionToKey("InputEventToggleSubwindow0Fullscreen", EKeys::One, this, &ASimHUD::inputEventToggleSubwindow0Fullscreen, false, true);
-    UAirBlueprintLib::BindActionToKey("InputEventToggleSubwindow1Fullscreen", EKeys::Two, this, &ASimHUD::inputEventToggleSubwindow1Fullscreen, false, true);
-    UAirBlueprintLib::BindActionToKey("InputEventToggleSubwindow2Fullscreen", EKeys::Three, this, &ASimHUD::inputEventToggleSubwindow2Fullscreen, false, true);
 }
 
 void ASimHUD::initializeSettings()
@@ -270,65 +262,73 @@ std::string ASimHUD::getSimModeFromUser()
     if (EAppReturnType::No == UAirBlueprintLib::ShowMessage(EAppMsgType::YesNo,
                                                             "Would you like to use car simulation? Choose no to use quadrotor simulation.",
                                                             "Choose Vehicle")) {
-        return AirSimSettings::kSimModeTypeMultirotor;
+        return AirSimSettings::kVehicleTypeSimpleFlight;
     }
     else
-        return AirSimSettings::kSimModeTypeCar;
+        return AirSimSettings::kVehicleTypePhysXCar;
 }
 
 void ASimHUD::loadLevel()
 {
-    UAirBlueprintLib::RunCommandOnGameThread([&]() { this->map_changed_ = UAirBlueprintLib::loadLevel(this->GetWorld(), FString(AirSimSettings::singleton().level_name.c_str())); }, true);
+    if (AirSimSettings::singleton().level_name != "")
+        UAirBlueprintLib::RunCommandOnGameThread([&]() { UAirBlueprintLib::loadLevel(this->GetWorld(), FString(AirSimSettings::singleton().level_name.c_str())); }, true);
+    else
+        UAirBlueprintLib::RunCommandOnGameThread([&]() { UAirBlueprintLib::loadLevel(this->GetWorld(), FString("Blocks")); }, true);
 }
-
-void ASimHUD::createSimMode()
+void ASimHUD::createAllSimModes()
 {
-    std::string simmode_name = AirSimSettings::singleton().simmode_name;
-
     FActorSpawnParameters simmode_spawn_params;
     simmode_spawn_params.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn;
-
+    simmodes_.SetNum(3);
     //spawn at origin. We will use this to do global NED transforms, for ex, non-vehicle objects in environment
-    if (simmode_name == AirSimSettings::kSimModeTypeMultirotor)
-        simmode_ = this->GetWorld()->SpawnActor<ASimModeWorldMultiRotor>(FVector::ZeroVector,
-                                                                         FRotator::ZeroRotator,
-                                                                         simmode_spawn_params);
-    else if (simmode_name == AirSimSettings::kSimModeTypeCar)
-        simmode_ = this->GetWorld()->SpawnActor<ASimModeCar>(FVector::ZeroVector,
+    simmodes_[0] = this->GetWorld()->SpawnActor<ASimModeWorldMultiRotor>(FVector::ZeroVector, FRotator::ZeroRotator, simmode_spawn_params);
+    simmodes_[1] = this->GetWorld()->SpawnActor<ASimModeCar>(FVector::ZeroVector,
                                                              FRotator::ZeroRotator,
                                                              simmode_spawn_params);
-    else if (simmode_name == AirSimSettings::kSimModeTypeComputerVision)
-        simmode_ = this->GetWorld()->SpawnActor<ASimModeComputerVision>(FVector::ZeroVector,
+    simmodes_[2] = this->GetWorld()->SpawnActor<ASimModeComputerVision>(FVector::ZeroVector,
                                                                         FRotator::ZeroRotator,
                                                                         simmode_spawn_params);
-    else {
-        UAirBlueprintLib::ShowMessage(EAppMsgType::Ok, std::string("SimMode is not valid: ") + simmode_name, "Error");
-        UAirBlueprintLib::LogMessageString("SimMode is not valid: ", simmode_name, LogDebugLevel::Failure);
-    }
 }
 
 void ASimHUD::initializeSubWindows()
 {
-    if (!simmode_)
-        return;
+    int default_simmode_index = -1;
+    for (auto simmode : simmodes_) {
+        default_simmode_index++;
 
-    auto default_vehicle_sim_api = simmode_->getVehicleSimApi();
+        // find the first vehicle from the settings and its corresponding simmode
+        if (simmode->getApiProvider()->hasDefaultVehicle() && simmode->isVehicleTypeSupported(AirSimSettings::singleton().getFirstVehicleSetting()->vehicle_type)) {
+            const auto& default_vehicle_sim_api = simmode->getVehicleSimApi();
+            auto camera_count = default_vehicle_sim_api->getCameraCount();
 
-    if (default_vehicle_sim_api) {
-        auto camera_count = default_vehicle_sim_api->getCameraCount();
+            //setup defaults
+            if (camera_count > 0) {
+                subwindow_cameras_[0] = default_vehicle_sim_api->getCamera("");
+                subwindow_cameras_[1] = default_vehicle_sim_api->getCamera(""); //camera_count > 3 ? 3 : 0
+                subwindow_cameras_[2] = default_vehicle_sim_api->getCamera(""); //camera_count > 4 ? 4 : 0
+            }
+            else
+                subwindow_cameras_[0] = subwindow_cameras_[1] = subwindow_cameras_[2] = nullptr;
 
-        //setup defaults
-        if (camera_count > 0) {
-            subwindow_cameras_[0] = default_vehicle_sim_api->getCamera("");
-            subwindow_cameras_[1] = default_vehicle_sim_api->getCamera(""); //camera_count > 3 ? 3 : 0
-            subwindow_cameras_[2] = default_vehicle_sim_api->getCamera(""); //camera_count > 4 ? 4 : 0
+            break;
         }
-        else
-            subwindow_cameras_[0] = subwindow_cameras_[1] = subwindow_cameras_[2] = nullptr;
     }
 
     for (const auto& setting : getSubWindowSettings()) {
-        APIPCamera* camera = simmode_->getCamera(msr::airlib::CameraDetails(setting.camera_name, setting.vehicle_name, setting.external));
+        APIPCamera* camera = nullptr;
+        if (setting.vehicle_name.empty()) {
+            // vehicle_name not specified - use the default simmode
+            camera = simmodes_[default_simmode_index]->getCamera(msr::airlib::CameraDetails(setting.camera_name, setting.vehicle_name, setting.external));
+        }
+        else {
+            // vehicle_name specified - find in which simmode and break in case it was found
+            for (auto simmode : simmodes_) {
+                if (simmode->getVehicleSimApi(setting.vehicle_name)) {
+                    camera = simmode->getCamera(msr::airlib::CameraDetails(setting.camera_name, setting.vehicle_name, setting.external));
+                    break;
+                }
+            }
+        }
         if (camera)
             subwindow_cameras_[setting.window_index] = camera;
         else
@@ -360,27 +360,33 @@ bool ASimHUD::getSettingsText(std::string& settingsText)
 }
 
 // Attempts to parse the settings file path or the settings text from the command line
-// Looks for the flag "-settings=". If it exists, settingsText will be set to the value.
-// Example (Path): AirSim.exe -settings="C:\path\to\settings.json"
-// Example (Text): AirSim.exe -settings={"foo":"bar"} -> settingsText will be set to {"foo":"bar"}
+// Looks for the flag "--settings". If it exists, settingsText will be set to the value.
+// Example (Path): AirSim.exe --settings "C:\path\to\settings.json"
+// Example (Text): AirSim.exe -s '{"foo" : "bar"}' -> settingsText will be set to {"foo": "bar"}
 // Returns true if the argument is present, false otherwise.
 bool ASimHUD::getSettingsTextFromCommandLine(std::string& settingsText)
 {
-    const TCHAR* commandLineArgs = FCommandLine::Get();
-    FString settingsJsonFString;
 
-    if (FParse::Value(commandLineArgs, TEXT("-settings="), settingsJsonFString, false)) {
-        if (readSettingsTextFromFile(settingsJsonFString, settingsText)) {
+    bool found = false;
+    FString settingsTextFString;
+    const TCHAR* commandLineArgs = FCommandLine::Get();
+
+    if (FParse::Param(commandLineArgs, TEXT("-settings"))) {
+        FString commandLineArgsFString = FString(commandLineArgs);
+        int idx = commandLineArgsFString.Find(TEXT("-settings"));
+        FString settingsJsonFString = commandLineArgsFString.RightChop(idx + 10);
+
+        if (readSettingsTextFromFile(settingsJsonFString.TrimQuotes(), settingsText)) {
             return true;
         }
-        else {
-            UAirBlueprintLib::LogMessageString("Loaded settings from commandline: ", TCHAR_TO_UTF8(*settingsJsonFString), LogDebugLevel::Informational);
-            settingsText = TCHAR_TO_UTF8(*settingsJsonFString);
-            return true;
+
+        if (FParse::QuotedString(*settingsJsonFString, settingsTextFString)) {
+            settingsText = std::string(TCHAR_TO_UTF8(*settingsTextFString));
+            found = true;
         }
     }
 
-    return false;
+    return found;
 }
 
 bool ASimHUD::readSettingsTextFromFile(const FString& settingsFilepath, std::string& settingsText)

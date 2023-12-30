@@ -39,8 +39,10 @@ namespace airlib
             geodetic2Ecef(home_latitude_, home_longitude_, home_altitude_, &home_ecef_x_, &home_ecef_y_, &home_ecef_z_);
 
             // Compute ECEF to NED and NED to ECEF matrices
-            ecef_to_ned_matrix_ = nRe(home_latitude_rad_, home_longitude_rad_);
-            ned_to_ecef_matrix_ = ecef_to_ned_matrix_.inverse();
+            double phiP = atan2(home_ecef_z_, sqrt(pow(home_ecef_x_, 2) + pow(home_ecef_y_, 2)));
+
+            ecef_to_ned_matrix_ = nRe(phiP, home_longitude_rad_);
+            ned_to_ecef_matrix_ = nRe(home_latitude_rad_, home_longitude_rad_).transpose();
         }
 
         void setHome(const GeoPoint& home_geopoint)
@@ -106,8 +108,8 @@ namespace airlib
             vect(1) = y - home_ecef_y_;
             vect(2) = z - home_ecef_z_;
             ret = ecef_to_ned_matrix_ * vect;
-            *north = -ret(1);
-            *east = ret(0);
+            *north = ret(0);
+            *east = ret(1);
             *down = -ret(2);
         }
 
@@ -116,8 +118,8 @@ namespace airlib
         {
             // NED (north/east/down) to ECEF coordinates
             Vector3d ned, ret;
-            ned(0) = -east;
-            ned(1) = north;
+            ned(0) = north;
+            ned(1) = east;
             ned(2) = -down;
             ret = ned_to_ecef_matrix_ * ned;
             *x = ret(0) + home_ecef_x_;
@@ -141,6 +143,10 @@ namespace airlib
             double x, y, z;
             ned2Ecef(north, east, down, &x, &y, &z);
             ecef2Geodetic(x, y, z, latitude, longitude, altitude);
+
+            //TODO: above returns wrong altitude if down was positive. This is because sqrt return value would be -ve
+            //but normal sqrt only return +ve. For now we just override it.
+            *altitude = home_altitude_ - down;
         }
 
         void ned2Geodetic(const Vector3r& ned_pos, GeoPoint& geopoint)

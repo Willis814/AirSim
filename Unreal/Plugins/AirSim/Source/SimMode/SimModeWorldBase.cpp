@@ -31,6 +31,18 @@ void ASimModeWorldBase::registerPhysicsBody(msr::airlib::VehicleSimApiBase* phys
     physics_world_.get()->addBody(physicsBody);
 }
 
+void ASimModeWorldBase::unregisterPhysicsBody(msr::airlib::VehicleSimApiBase* physicsBody)
+{
+     if (!physicsBody) {
+        // 如果为空，可以记录一个错误或者返回
+        Utils::log("Physics body is null for unregistering.", Utils::kLogLevelError);
+        return;
+    }
+    // 从physics_world_中移除physicsBody
+    physicsBody->reset();
+    physics_world_.get()->removeBody(physicsBody);
+}
+
 void ASimModeWorldBase::EndPlay(const EEndPlayReason::Type EndPlayReason)
 {
     //remove everything that we created in BeginPlay
@@ -74,7 +86,6 @@ std::unique_ptr<ASimModeWorldBase::PhysicsEngineBase> ASimModeWorldBase::createP
         }
 
         physics_engine->setWind(getSettings().wind);
-        physics_engine->setExtForce(getSettings().ext_force);
     }
     else if (physics_engine_name == "ExternalPhysicsEngine") {
         physics_engine.reset(new msr::airlib::ExternalPhysicsEngine());
@@ -137,11 +148,6 @@ void ASimModeWorldBase::setWind(const msr::airlib::Vector3r& wind) const
     physics_engine_->setWind(wind);
 }
 
-void ASimModeWorldBase::setExtForce(const msr::airlib::Vector3r& ext_force) const
-{
-    physics_engine_->setExtForce(ext_force);
-}
-
 void ASimModeWorldBase::updateDebugReport(msr::airlib::StateReporterWrapper& debug_reporter)
 {
     unused(debug_reporter);
@@ -157,7 +163,7 @@ void ASimModeWorldBase::Tick(float DeltaSeconds)
         physics_world_->updateStateReport();
 
         for (auto& api : getApiProvider()->getVehicleSimApis())
-            api->updateRenderedState(DeltaSeconds);
+                api->updateRenderedState(DeltaSeconds);
 
         physics_world_->unlock();
     }

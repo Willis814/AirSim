@@ -7,6 +7,7 @@
 #include "SimMode/SimModeBase.h"
 #include "Components/StaticMeshComponent.h"
 #include "Runtime/Engine/Classes/Engine/StaticMesh.h"
+#include "Engine/LevelStreamingDynamic.h"
 #include <string>
 
 class WorldSimApi : public msr::airlib::WorldSimApiBase
@@ -43,14 +44,14 @@ public:
     virtual int getSegmentationObjectID(const std::string& mesh_name) const override;
 
     virtual bool addVehicle(const std::string& vehicle_name, const std::string& vehicle_type, const Pose& pose, const std::string& pawn_path = "") override;
-
+    virtual bool destroyVehicle(const std::string& vehicle_name) override;
     virtual void printLogMessage(const std::string& message,
                                  const std::string& message_param = "", unsigned char severity = 0) override;
 
     virtual bool setLightIntensity(const std::string& light_name, float intensity) override;
     virtual std::unique_ptr<std::vector<std::string>> swapTextures(const std::string& tag, int tex_id = 0, int component_id = 0, int material_id = 0) override;
-    virtual bool setObjectMaterial(const std::string& object_name, const std::string& material_name, const int component_id = 0) override;
-    virtual bool setObjectMaterialFromTexture(const std::string& object_name, const std::string& texture_path, const int component_id = 0) override;
+    virtual bool setObjectMaterial(const std::string& object_name, const std::string& material_name) override;
+    virtual bool setObjectMaterialFromTexture(const std::string& object_name, const std::string& texture_path) override;
     virtual std::vector<std::string> listSceneObjects(const std::string& name_regex) const override;
     virtual Pose getObjectPose(const std::string& object_name) const override;
     virtual bool setObjectPose(const std::string& object_name, const Pose& pose, bool teleport) override;
@@ -75,7 +76,6 @@ public:
     virtual bool isRecording() const override;
 
     virtual void setWind(const Vector3r& wind) const override;
-    virtual void setExtForce(const Vector3r& ext_force) const override;
     virtual bool createVoxelGrid(const Vector3r& position, const int& x_size, const int& y_size, const int& z_size, const float& res, const std::string& output_file) override;
     virtual std::vector<std::string> listVehicles() const override;
 
@@ -126,5 +126,6 @@ private:
 
 private:
     ASimModeBase* simmode_;
+    ULevelStreamingDynamic* current_level_;
     std::vector<bool> voxel_grid_;
 };

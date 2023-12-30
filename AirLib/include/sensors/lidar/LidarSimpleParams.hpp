@@ -36,33 +36,22 @@ namespace airlib
         };
 
         bool draw_debug_points = false;
-        AirSimSettings::LidarSetting::DataFrame data_frame;
+        std::string data_frame = AirSimSettings::kVehicleInertialFrame;
 
         bool external_controller = true;
 
         real_T update_frequency = 10; // Hz
         real_T startup_delay = 0; // sec
 
-        void initializeFromSettings(const AirSimSettings::LidarSetting& settings)
+        void initializeFromSettings(const AirSimSettings::LidarSetting& settings, const std::string& vehicle_type)
         {
-            std::string simmode_name = AirSimSettings::singleton().simmode_name;
-
             const auto& settings_json = settings.settings;
             number_of_channels = settings_json.getInt("NumberOfChannels", number_of_channels);
             range = settings_json.getFloat("Range", range);
             points_per_second = settings_json.getInt("PointsPerSecond", points_per_second);
             horizontal_rotation_frequency = settings_json.getInt("RotationsPerSecond", horizontal_rotation_frequency);
             draw_debug_points = settings_json.getBool("DrawDebugPoints", draw_debug_points);
-            std::string frame = settings_json.getString("DataFrame", AirSimSettings::kVehicleInertialFrame);
-            if (frame == AirSimSettings::kVehicleInertialFrame) {
-                data_frame = AirSimSettings::LidarSetting::DataFrame::VehicleInertialFrame;
-            }
-            else if (frame == AirSimSettings::kSensorLocalFrame) {
-                data_frame = AirSimSettings::LidarSetting::DataFrame::SensorLocalFrame;
-            }
-            else {
-                throw std::runtime_error("Unknown requested data frame");
-            }
+            data_frame = settings_json.getString("DataFrame", data_frame);
             external_controller = settings_json.getBool("ExternalController", external_controller);
 
             vertical_FOV_upper = settings_json.getFloat("VerticalFOVUpper", Utils::nan<float>());
@@ -70,7 +59,7 @@ namespace airlib
             // By default, for multirotors the lidars FOV point downwards;
             // for cars, the lidars FOV is more forward facing.
             if (std::isnan(vertical_FOV_upper)) {
-                if (simmode_name == AirSimSettings::kSimModeTypeMultirotor)
+                if (AirSimSettings::isMultirotor(vehicle_type))
                     vertical_FOV_upper = -15;
                 else
                     vertical_FOV_upper = +10;
@@ -78,7 +67,7 @@ namespace airlib
 
             vertical_FOV_lower = settings_json.getFloat("VerticalFOVLower", Utils::nan<float>());
             if (std::isnan(vertical_FOV_lower)) {
-                if (simmode_name == AirSimSettings::kSimModeTypeMultirotor)
+                if (AirSimSettings::isMultirotor(vehicle_type))
                     vertical_FOV_lower = -45;
                 else
                     vertical_FOV_lower = -10;
@@ -95,7 +84,7 @@ namespace airlib
             if (std::isnan(relative_pose.position.y()))
                 relative_pose.position.y() = 0;
             if (std::isnan(relative_pose.position.z())) {
-                if (simmode_name == AirSimSettings::kSimModeTypeMultirotor)
+                if (AirSimSettings::isMultirotor(vehicle_type))
                     relative_pose.position.z() = 0;
                 else
                     relative_pose.position.z() = -1; // a little bit above for cars

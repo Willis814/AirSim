@@ -83,6 +83,13 @@ public:
     }
 
     //TODO: add erase methods
+    void erase(const TKey& key) {
+    auto it = map_.find(key);
+    if (it != map_.end()) {
+        vals_.erase(it->second);
+        map_.erase(it);
+    }
+}
 
 private:
     std::map<TKey, TVal> map_;

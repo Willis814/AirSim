@@ -60,8 +60,8 @@ if [ "$(uname)" == "Darwin" ]; then
     #export CC=/usr/local/opt/llvm@8/bin/clang
     #export CXX=/usr/local/opt/llvm@8/bin/clang++
     #now pick up whatever setup.sh installs
-    export CC="$(brew --prefix)/opt/llvm/bin/clang"
-    export CXX="$(brew --prefix)/opt/llvm/bin/clang++"
+    export CC=/usr/local/opt/llvm/bin/clang
+    export CXX=/usr/local/opt/llvm/bin/clang++
 else
     if $gcc; then
         export CC="gcc-8"
@@ -94,20 +94,14 @@ if [[ ! -d $build_dir ]]; then
     mkdir -p $build_dir
 fi
 
-# Fix for Unreal/Unity using x86_64 (Rosetta) on Apple Silicon hardware.
-CMAKE_VARS=
-if [ "$(uname)" == "Darwin" ]; then
-    CMAKE_VARS="-DCMAKE_APPLE_SILICON_PROCESSOR=x86_64"
-fi
-
 pushd $build_dir  >/dev/null
 if $debug; then
     folder_name="Debug"
-    "$CMAKE" ../cmake -DCMAKE_BUILD_TYPE=Debug $CMAKE_VARS \
+    "$CMAKE" ../cmake -DCMAKE_BUILD_TYPE=Debug \
         || (popd && rm -r $build_dir && exit 1)   
 else
     folder_name="Release"
-    "$CMAKE" ../cmake -DCMAKE_BUILD_TYPE=Release $CMAKE_VARS \
+    "$CMAKE" ../cmake -DCMAKE_BUILD_TYPE=Release \
         || (popd && rm -r $build_dir && exit 1)
 fi
 popd >/dev/null
@@ -134,13 +128,10 @@ rsync -a --delete MavLinkCom/include AirLib/deps/MavLinkCom
 rsync -a --delete AirLib Unreal/Plugins/AirSim/Source
 rm -rf Unreal/Plugins/AirSim/Source/AirLib/src
 
-# Update all environment projects
-for d in Unreal/Environments/* ; do
-    [ -L "${d%/}" ] && continue
-    $d/clean.sh
-    mkdir -p $d/Plugins
-    rsync -a --delete Unreal/Plugins/AirSim $d/Plugins
-done
+# Update Blocks project
+Unreal/Environments/Blocks/clean.sh
+mkdir -p Unreal/Environments/Blocks/Plugins
+rsync -a --delete Unreal/Plugins/AirSim Unreal/Environments/Blocks/Plugins
 
 set +x
 
@@ -149,9 +140,11 @@ echo ""
 echo "=================================================================="
 echo " AirSim plugin is built! Here's how to build Unreal project."
 echo "=================================================================="
-echo "All environments under Unreal/Environments have been updated."
+echo "If you are using Blocks environment, its already updated."
+echo "If you are using your own environment, update plugin using,"
+echo "rsync -a --delete Unreal/Plugins path/to/MyUnrealProject"
 echo ""
-echo "For further info see:"
+echo "For help see:"
 echo "https://github.com/Microsoft/AirSim/blob/master/docs/build_linux.md"
 echo "=================================================================="
 

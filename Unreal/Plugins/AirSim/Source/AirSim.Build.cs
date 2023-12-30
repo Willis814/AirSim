@@ -21,10 +21,8 @@ public class AirSim : ModuleRules
     }
     private string ProjectBinariesPath
     {
-        get
-        {
-            return Path.Combine(
-              Directory.GetParent(AirSimPluginPath).Parent.FullName, "Binaries");
+        get { return Path.Combine(
+                Directory.GetParent(AirSimPluginPath).Parent.FullName, "Binaries");
         }
     }
     private string AirSimPluginDependencyPath
@@ -42,9 +40,7 @@ public class AirSim : ModuleRules
 
     private void SetupCompileMode(CompileMode mode, ReadOnlyTargetRules Target)
     {
-
         LoadAirSimDependency(Target, "MavLinkCom", "MavLinkCom");
-        LoadAirSimDependency(Target, "MotionCore", "MotionCore", "MotionCore");
 
         switch (mode)
         {
@@ -82,8 +78,8 @@ public class AirSim : ModuleRules
 
         bEnableExceptions = true;
 
-        PublicDependencyModuleNames.AddRange(new string[] { "Core", "CoreUObject", "Engine", "InputCore", "ImageWrapper", "RenderCore", "RHI", "PhysicsCore", "AssetRegistry", "ChaosVehicles", "Landscape", "CinematicCamera", "Projects" });
-        PrivateDependencyModuleNames.AddRange(new string[] { "UMG", "Slate", "SlateCore", "RenderCore" });
+        PublicDependencyModuleNames.AddRange(new string[] { "Core", "CoreUObject", "Engine", "InputCore", "ImageWrapper", "RenderCore", "RHI", "AssetRegistry", "PhysicsCore", "PhysXVehicles", "PhysXVehicleLib", "PhysX", "APEX", "Landscape", "CinematicCamera" });
+        PrivateDependencyModuleNames.AddRange(new string[] { "UMG", "Slate", "SlateCore" });
 
         //suppress VC++ proprietary warnings
         PublicDefinitions.Add("_SCL_SECURE_NO_WARNINGS=1");
@@ -92,13 +88,9 @@ public class AirSim : ModuleRules
 
         PublicIncludePaths.Add(Path.Combine(AirLibPath, "include"));
         PublicIncludePaths.Add(Path.Combine(AirLibPath, "deps", "eigen3"));
-        PublicIncludePaths.Add(Path.Combine(AirLibPath, "deps", "MotionCore", "include"));
         AddOSLibDependencies(Target);
 
-        AddMotionCoreConfigFiles(Path.Combine(AirLibPath, "deps", "MotionCore"));
-
         SetupCompileMode(CompileMode.HeaderOnlyWithRpc, Target);
-
     }
 
     private void AddOSLibDependencies(ReadOnlyTargetRules Target)
@@ -113,12 +105,12 @@ public class AirSim : ModuleRules
             PublicAdditionalLibraries.Add("dxguid.lib");
         }
 
-        if (Target.Platform == UnrealTargetPlatform.Linux)
-        {
-            // needed when packaging
-            PublicAdditionalLibraries.Add("stdc++");
-            PublicAdditionalLibraries.Add("supc++");
-        }
+		if (Target.Platform == UnrealTargetPlatform.Linux)
+		{
+			// needed when packaging
+			PublicAdditionalLibraries.Add("stdc++");
+			PublicAdditionalLibraries.Add("supc++");
+		}
     }
 
     static void CopyFileIfNewer(string srcFilePath, string destFolder)
@@ -132,13 +124,13 @@ public class AirSim : ModuleRules
         //else skip
     }
 
-    private bool LoadAirSimDependency(ReadOnlyTargetRules Target, string LibName, string LibFileName, string DllFileName = null)
+    private bool LoadAirSimDependency(ReadOnlyTargetRules Target, string LibName, string LibFileName)
     {
         string LibrariesPath = Path.Combine(AirLibPath, "deps", LibName, "lib");
-        return AddLibDependency(LibName, LibrariesPath, LibFileName, Target, true, DllFileName);
+        return AddLibDependency(LibName, LibrariesPath, LibFileName, Target, true);
     }
 
-    private bool AddLibDependency(string LibName, string LibPath, string LibFileName, ReadOnlyTargetRules Target, bool IsAddLibInclude, string DllFileName = null)
+    private bool AddLibDependency(string LibName, string LibPath, string LibFileName, ReadOnlyTargetRules Target, bool IsAddLibInclude)
     {
         string PlatformString = (Target.Platform == UnrealTargetPlatform.Win64 || Target.Platform == UnrealTargetPlatform.Mac) ? "x64" : "x86";
         string ConfigurationString = (Target.Configuration == UnrealTargetConfiguration.Debug) ? "Debug" : "Release";
@@ -150,49 +142,18 @@ public class AirSim : ModuleRules
             isLibrarySupported = true;
 
             PublicAdditionalLibraries.Add(Path.Combine(LibPath, PlatformString, ConfigurationString, LibFileName + ".lib"));
-
-            if (DllFileName != null)
-            {
-                PublicDelayLoadDLLs.Add(DllFileName + ".dll");
-                RuntimeDependencies.Add(Path.Combine(LibPath, PlatformString, ConfigurationString, DllFileName + ".dll"));
-            }
-
-        }
-        else if (Target.Platform == UnrealTargetPlatform.Linux || Target.Platform == UnrealTargetPlatform.Mac)
-        {
+        } else if (Target.Platform == UnrealTargetPlatform.Linux || Target.Platform == UnrealTargetPlatform.Mac) {
             isLibrarySupported = true;
-            if (LibFileName != "MotionCore")
-            {
-                PublicAdditionalLibraries.Add(Path.Combine(LibPath, "lib" + LibFileName + ".a"));
-            }
-            if (DllFileName != null)
-            {
-                //PublicAdditionalLibraries.Add(DllFileName + ".so");
-                PublicAdditionalLibraries.Add(Path.Combine(LibPath, "lib" + DllFileName + ".so"));
-                //PublicDelayLoadDLLs.Add(Path.Combine(LibPath, "lib" + DllFileName + ".so"));
-                RuntimeDependencies.Add(Path.Combine(LibPath, "lib" + DllFileName + ".so"));
-            }
+            PublicAdditionalLibraries.Add(Path.Combine(LibPath, "lib" + LibFileName + ".a"));
         }
 
         if (isLibrarySupported && IsAddLibInclude)
         {
             // Include path
             PublicIncludePaths.Add(Path.Combine(AirLibPath, "deps", LibName, "include"));
-            PublicIncludePaths.Add(Path.Combine(AirLibPath, "deps", LibName, "include", LibName));
         }
         PublicDefinitions.Add(string.Format("WITH_" + LibName.ToUpper() + "_BINDING={0}", isLibrarySupported ? 1 : 0));
 
         return isLibrarySupported;
     }
-
-    private void AddMotionCoreConfigFiles(string path)
-    {
-        string[] configFiles = Directory.GetFiles(path, "*.yaml");
-
-        for (int i = 0; i < configFiles.Length; i++)
-        {
-            RuntimeDependencies.Add(Path.Combine(path, configFiles[i]));
-        }
-    }
-
 }

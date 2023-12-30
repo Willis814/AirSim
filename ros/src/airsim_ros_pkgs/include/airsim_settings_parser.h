@@ -16,7 +16,7 @@ STRICT_MODE_ON
 class AirSimSettingsParser
 {
 public:
-    using AirSimSettings = msr::airlib::AirSimSettings;
+    typedef msr::airlib::AirSimSettings AirSimSettings;
 
 public:
     AirSimSettingsParser(const std::string& host_ip);

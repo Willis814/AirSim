@@ -113,7 +113,6 @@ public: //Unreal specific methods
     const APIPCamera* getCamera(const std::string& camera_name) const;
     APIPCamera* getCamera(const std::string& camera_name);
     int getCameraCount();
-
     virtual bool testLineOfSightToPoint(const msr::airlib::GeoPoint& point) const;
 
     //if enabled, this would show some flares
@@ -128,7 +127,6 @@ public: //Unreal specific methods
 
     FVector getUUPosition() const;
     FRotator getUUOrientation() const;
-
     const NedTransform& getNedTransform() const;
 
     void possess();

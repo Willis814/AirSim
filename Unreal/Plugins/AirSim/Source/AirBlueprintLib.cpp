@@ -9,6 +9,7 @@
 #include "Components/StaticMeshComponent.h"
 #include "EngineUtils.h"
 #include "Runtime/Engine/Classes/Engine/StaticMesh.h"
+#include "Runtime/Engine/Classes/Engine/LevelStreamingDynamic.h"
 #include "UObject/UObjectIterator.h"
 #include "Camera/CameraComponent.h"
 #include "Runtime/Engine/Classes/GameFramework/PlayerStart.h"
@@ -23,10 +24,9 @@
 #include <exception>
 #include "common/common_utils/Utils.hpp"
 #include "Modules/ModuleManager.h"
-#include "AssetRegistry/ARFilter.h"
-#include "AssetRegistry/AssetRegistryModule.h"
+#include "ARFilter.h"
+#include "AssetRegistryModule.h"
 #include "DetectionComponent.h"
-#include "CineCameraComponent.h"
 
 /*
 //TODO: change naming conventions to same as other files?
@@ -35,6 +35,7 @@ Methods -> CamelCase
 parameters -> camel_case
 */
 
+ULevelStreamingDynamic* UAirBlueprintLib::CURRENT_LEVEL = nullptr;
 bool UAirBlueprintLib::log_messages_hidden_ = false;
 msr::airlib::AirSimSettings::SegmentationSetting::MeshNamingMethodType UAirBlueprintLib::mesh_naming_method_ =
     msr::airlib::AirSimSettings::SegmentationSetting::MeshNamingMethodType::OwnerName;
@@ -75,23 +76,18 @@ void UAirBlueprintLib::setSimulatePhysics(AActor* actor, bool simulate_physics)
     }
 }
 
-bool UAirBlueprintLib::loadLevel(UObject* context, const FString& level_name)
+ULevelStreamingDynamic* UAirBlueprintLib::loadLevel(UObject* context, const FString& level_name)
 {
-
     bool success{ false };
-    // Get name of current level
-    auto currMap = context->GetWorld()->GetMapName();
-    currMap.RemoveFromStart(context->GetWorld()->StreamingLevelsPrefix);
-    // Only load new level if different from current level
-    if (!currMap.Equals(level_name)) {
-        FString LongPackageName;
-        success = FPackageName::SearchForPackageOnDisk(level_name, &LongPackageName);
-        if (success) {
-            context->GetWorld()->SetNewWorldOrigin(FIntVector(0, 0, 0));
-            UGameplayStatics::OpenLevel(context->GetWorld(), FName(*LongPackageName), true);
-        }
+    context->GetWorld()->SetNewWorldOrigin(FIntVector(0, 0, 0));
+    ULevelStreamingDynamic* new_level = UAirsimLevelStreaming::LoadAirsimLevelInstance(
+        context->GetWorld(), level_name, FVector(0, 0, 0), FRotator(0, 0, 0), success);
+    if (success) {
+        if (CURRENT_LEVEL != nullptr && CURRENT_LEVEL->IsValidLowLevel())
+            CURRENT_LEVEL->SetShouldBeLoaded(false);
+        CURRENT_LEVEL = new_level;
     }
-    return success;
+    return CURRENT_LEVEL;
 }
 
 bool UAirBlueprintLib::spawnPlayer(UWorld* context)
@@ -240,8 +236,8 @@ void UAirBlueprintLib::GenerateAssetRegistryMap(const UObject* context, TMap<FSt
 {
     UAirBlueprintLib::RunCommandOnGameThread([context, &asset_map]() {
         FARFilter Filter;
-        Filter.ClassPaths.Add(UStaticMesh::StaticClass()->GetClassPathName());
-        Filter.ClassPaths.Add(UBlueprint::StaticClass()->GetClassPathName());
+        Filter.ClassNames.Add(UStaticMesh::StaticClass()->GetFName());
+        Filter.ClassNames.Add(UBlueprint::StaticClass()->GetFName());
         Filter.bRecursivePaths = true;
 
         auto world = context->GetWorld();
@@ -318,7 +314,6 @@ template UStaticMeshComponent* UAirBlueprintLib::GetActorComponent(AActor*, FStr
 template URotatingMovementComponent* UAirBlueprintLib::GetActorComponent(AActor*, FString);
 template UCameraComponent* UAirBlueprintLib::GetActorComponent(AActor*, FString);
 template UDetectionComponent* UAirBlueprintLib::GetActorComponent(AActor*, FString);
-template UCineCameraComponent* UAirBlueprintLib::GetActorComponent(AActor*, FString);
 
 bool UAirBlueprintLib::IsInGameThread()
 {
@@ -460,12 +455,8 @@ std::vector<msr::airlib::MeshPositionVertexBuffersResponse> UAirBlueprintLib::Ge
 
         //Various checks if there is even a valid mesh
         if (!comp->GetStaticMesh()) continue;
-        if (!comp->GetStaticMesh()->HasValidRenderData()) continue;
-#if ((ENGINE_MAJOR_VERSION > 4) || (ENGINE_MAJOR_VERSION == 4 && ENGINE_MINOR_VERSION >= 27))
-        if (comp->GetStaticMesh()->GetRenderData()->LODResources.Num() == 0) continue;
-#else
+        if (!comp->GetStaticMesh()->RenderData) continue;
         if (comp->GetStaticMesh()->RenderData->LODResources.Num() == 0) continue;
-#endif
 
         msr::airlib::MeshPositionVertexBuffersResponse mesh;
         mesh.name = name;
@@ -480,11 +471,7 @@ std::vector<msr::airlib::MeshPositionVertexBuffersResponse> UAirBlueprintLib::Ge
         mesh.orientation.y() = att.Y;
         mesh.orientation.z() = att.Z;
 
-#if ((ENGINE_MAJOR_VERSION > 4) || (ENGINE_MAJOR_VERSION == 4 && ENGINE_MINOR_VERSION >= 27))
-        FPositionVertexBuffer* vertex_buffer = &comp->GetStaticMesh()->GetRenderData()->LODResources[0].VertexBuffers.PositionVertexBuffer;
-#else
         FPositionVertexBuffer* vertex_buffer = &comp->GetStaticMesh()->RenderData->LODResources[0].VertexBuffers.PositionVertexBuffer;
-#endif
         if (vertex_buffer) {
             const int32 vertex_count = vertex_buffer->VertexBufferRHI->GetSize();
             TArray<FVector> vertices;
@@ -499,11 +486,7 @@ std::vector<msr::airlib::MeshPositionVertexBuffersResponse> UAirBlueprintLib::Ge
                     RHIUnlockVertexBuffer(vertex_buffer->VertexBufferRHI);
                 });
 
-#if ((ENGINE_MAJOR_VERSION > 4) || (ENGINE_MAJOR_VERSION == 4 && ENGINE_MINOR_VERSION >= 27))
-            FStaticMeshLODResources& lod = comp->GetStaticMesh()->GetRenderData()->LODResources[0];
-#else
             FStaticMeshLODResources& lod = comp->GetStaticMesh()->RenderData->LODResources[0];
-#endif
             FRawStaticIndexBuffer* IndexBuffer = &lod.IndexBuffer;
             int num_indices = IndexBuffer->IndexBufferRHI->GetSize() / IndexBuffer->IndexBufferRHI->GetStride();
 

@@ -52,7 +52,8 @@ namespace airlib
         virtual int getSegmentationObjectID(const std::string& mesh_name) const = 0;
 
         virtual bool addVehicle(const std::string& vehicle_name, const std::string& vehicle_type, const Pose& pose, const std::string& pawn_path = "") = 0;
-
+        //willis modefied
+        virtual bool destroyVehicle(const std::string& vehicle_name) = 0;
         virtual void printLogMessage(const std::string& message,
                                      const std::string& message_param = "", unsigned char severity = 0) = 0;
 
@@ -74,8 +75,8 @@ namespace airlib
         virtual bool setObjectScale(const std::string& object_name, const Vector3r& scale) = 0;
         virtual std::unique_ptr<std::vector<std::string>> swapTextures(const std::string& tag, int tex_id = 0, int component_id = 0, int material_id = 0) = 0;
         virtual bool setLightIntensity(const std::string& light_name, float intensity) = 0;
-        virtual bool setObjectMaterial(const std::string& object_name, const std::string& material_name, const int component_id = 0) = 0;
-        virtual bool setObjectMaterialFromTexture(const std::string& object_name, const std::string& texture_path, const int component_id = 0) = 0;
+        virtual bool setObjectMaterial(const std::string& object_name, const std::string& material_name) = 0;
+        virtual bool setObjectMaterialFromTexture(const std::string& object_name, const std::string& texture_path) = 0;
         virtual vector<MeshPositionVertexBuffersResponse> getMeshPositionVertexBuffers() const = 0;
 
         virtual bool createVoxelGrid(const Vector3r& position, const int& x_size, const int& y_size, const int& z_size, const float& res, const std::string& output_file) = 0;
@@ -86,7 +87,6 @@ namespace airlib
         virtual bool isRecording() const = 0;
 
         virtual void setWind(const Vector3r& wind) const = 0;
-        virtual void setExtForce(const Vector3r& ext_force) const = 0;
         virtual vector<string> listVehicles() const = 0;
 
         virtual std::string getSettingsString() const = 0;

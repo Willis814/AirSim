@@ -183,3 +183,23 @@ MultirotorPawnSimApi::UpdatableObject* MultirotorPawnSimApi::getPhysicsBody()
     return multirotor_physics_body_->getPhysicsBody();
 }
 //*** End: UpdatableState implementation ***//
+//Willis modified
+std::string MultirotorPawnSimApi::getRecordFileLine(bool is_header_line) const
+{
+    if (is_header_line) {
+        return "VehicleName\tTimeStamp\tPitch\tRoll\tYaw\t";
+    }
+
+    const auto* kinematics = getGroundTruthKinematics();
+    const uint64_t timestamp_millis = static_cast<uint64_t>(clock()->nowNanos() / 1.0E6);
+    float p, r, y;
+    VectorMath::toEulerianAngle(kinematics->pose.orientation, p, r, y);
+    std::ostringstream ss;
+    ss << getVehicleName() << "\t";
+    ss << timestamp_millis << "\t";
+    ss << kinematics->pose.position.x() << "\t" << kinematics->pose.position.y() << "\t" << kinematics->pose.position.z() << "\t";
+    ss << p << "\t" << r << "\t"
+        << y << "\t";
+
+    return ss.str();
+}
